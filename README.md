@@ -1,4 +1,4 @@
-# HPCA_Linear_Regression
+# HPCA-Linear-Regression
 
 Implementazione della Regressione Lineare usando le API di CUDA
 
