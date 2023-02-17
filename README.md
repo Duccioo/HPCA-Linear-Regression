@@ -26,6 +26,15 @@ Implementazione della Regressione Lineare usando le API di CUDA
 
 - [Progetto per l'esame di High Performance Computing, Algoritmo di Strassen in ambiente GPU-CUDA](https://github.com/Leyxargon/Strassen-GPU)
 
+- [CUDA implementation of Canny edge detector in C/C++.](https://github.com/Dantekk/Canny-GPU-CUDA-implementation)
+
+-[Sobel Filter Canny Edge Detection Mean Blur Gaussian Blur Noise Addition Noise Reduction Bokeh Blur](https://github.com/Org-Placeholder/CV_CUDA)
+
+-[Low-poly style image translation parallelized by CUDA library](https://github.com/haoyuhsu/Parallel-Low-Poly-Image)
+
 ### altra roba sempre con cuda:
 
-- [Matrix Add, Vector Add](https://github.com/x0nu11byt3/hpc-writeups/tree/main/cuda)
+- [CUDA Hacker's Toolkit (tanta roba utile)](https://github.com/tensorush/CUDA-Hackers-Toolkit)
+- [Matrix Mul, Vector Add](https://github.com/GitRealFan/Simple-Projects-CUDA)
+- [tutorial Base](https://github.com/priteshgohil/CUDA-programming-tutorial)
+- [matrix_transpose](https://github.com/Logeswaran123/CUDA-Programming/tree/main/9_matrix_transpose)
