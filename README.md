@@ -28,9 +28,9 @@ Implementazione della Regressione Lineare usando le API di CUDA
 
 - [CUDA implementation of Canny edge detector in C/C++.](https://github.com/Dantekk/Canny-GPU-CUDA-implementation)
 
--[Sobel Filter Canny Edge Detection Mean Blur Gaussian Blur Noise Addition Noise Reduction Bokeh Blur](https://github.com/Org-Placeholder/CV_CUDA)
+- [Sobel Filter Canny Edge Detection Mean Blur Gaussian Blur Noise Addition Noise Reduction Bokeh Blur](https://github.com/Org-Placeholder/CV_CUDA)
 
--[Low-poly style image translation parallelized by CUDA library](https://github.com/haoyuhsu/Parallel-Low-Poly-Image)
+- [Low-poly style image translation parallelized by CUDA library](https://github.com/haoyuhsu/Parallel-Low-Poly-Image)
 
 ### altra roba sempre con cuda:
 
