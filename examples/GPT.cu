@@ -4,7 +4,7 @@
 #define NUM_FEATURES 2
 #define NUM_SAMPLES 10
 #define LEARNING_RATE 0.01
-#define NUM_ITERATIONS 1000
+#define NUM_ITERATIONS 100000
 
 __global__ void linear_regression(float *d_X, float *d_y, float *d_theta, int m, int n, float alpha) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
