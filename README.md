@@ -32,8 +32,6 @@ Implementazione della Regressione Lineare usando le API di CUDA
 
 - [Low-poly style image translation parallelized by CUDA library](https://github.com/haoyuhsu/Parallel-Low-Poly-Image)
 
-
-
 ### altra roba sempre con cuda:
 
 - [CUDA Hacker's Toolkit (tanta roba utile)](https://github.com/tensorush/CUDA-Hackers-Toolkit)

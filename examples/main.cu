@@ -22,6 +22,7 @@
 
 void linear_regression_cpu(std::array<float, INPUT_SIZE> x, std::array<float, INPUT_SIZE> y, float bias, float intercept) {
 	float j_error = std::numeric_limits<float>::max();
+	
 	float learning_rate = 0.01;
 
 	while(j_error > 0.17) {
