@@ -4,10 +4,6 @@
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
-
-
-
-
 #include "csv.h"
 #include <algorithm>
 #include <array>
@@ -227,7 +223,7 @@ double SumWithCuda(const std::vector<MultivariateCoordinate> &mc,
   cudaStatus =
       cudaMemcpy(out, dev_out, n * sizeof(double), cudaMemcpyDeviceToHost);
   if (cudaStatus != cudaSuccess) {
-    fprintf(stderr, "cudaMemcpy output failed!");
+    fprintf(stderr, "cudaMemcpy output failed?!");
     goto Clean;
   }
 
