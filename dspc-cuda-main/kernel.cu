@@ -223,7 +223,7 @@ double SumWithCuda(const std::vector<MultivariateCoordinate> &mc,
   cudaStatus =
       cudaMemcpy(out, dev_out, n * sizeof(double), cudaMemcpyDeviceToHost);
   if (cudaStatus != cudaSuccess) {
-    fprintf(stderr, "cudaMemcpy output failed?!");
+    fprintf(stderr, "cudaMemcpy output failed!");
     goto Clean;
   }
 
