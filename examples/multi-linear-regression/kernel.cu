@@ -10,10 +10,12 @@
 #include <iostream>
 #include <numeric>
 #include <stdio.h>
+#include <time.h>
+#include <chrono>
 
 #include <vector>
 
-#include "Timer.h"
+// #include "Timer.h"
 
 static const int ARR_SIZE = 100000;
 static const int BLOCK_SIZE = 1024;
@@ -199,7 +201,7 @@ double SumWithCuda(const std::vector<MultivariateCoordinate> &mc,
   }
 
   // Launch kernel
-  calculate_sum<<<1, BLOCK_SIZE>>>(dev_coord, dev_out, op);
+  calculate_sum<<<32, BLOCK_SIZE>>>(dev_coord, dev_out, op);
 
   // Check for any errors launching the kernel
   cudaStatus = cudaGetLastError();
@@ -392,7 +394,7 @@ Clean:
 
 std::tuple<std::pair<double, double>, double>
 CalculateGradientAndYIntercept(const std::vector<MultivariateCoordinate> &mc) {
-  auto timer = Timer("CalculateGradient");
+  // auto timer = Timer("CalculateGradient");
 
   Operation op;
 
@@ -454,11 +456,18 @@ int EndCuda() {
 }
 
 int main() {
-  std::vector<MultivariateCoordinate> coordinates = read_mock_data("mock.csv");
+  std::vector<MultivariateCoordinate> coordinates = read_mock_data("../../data/mock.csv");
+
+  auto begin_gpu = std::chrono::high_resolution_clock::now();
 
   std::tuple<std::pair<double, double>, double> result =
       CalculateGradientAndYIntercept(coordinates);
 
+  //End timing and compute total execution time
+	auto end_gpu = std::chrono::high_resolution_clock::now();
+	auto elapsed_gpu = std::chrono::duration_cast<std::chrono::nanoseconds>(end_gpu - begin_gpu);
+
+  std::cout << "GPU-implementation execution time(ns): " << elapsed_gpu.count() << std::endl;
   int err = EndCuda();
 
   return 0;

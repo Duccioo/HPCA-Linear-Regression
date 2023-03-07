@@ -1,12 +1,36 @@
 #include <cuda_runtime.h>
 #include <fstream>
-#include <iostream>
+
 #include <string>
 #include <vector>
+
+#include "device_launch_parameters.h"
+#include "csv.h"
+#include <algorithm>
+#include <array>
+#include <iostream>
+#include <numeric>
+#include <stdio.h>
+#include <time.h>
+#include <chrono>
+
 
 using namespace std;
 
 #define THREADS_PER_BLOCK 1024
+
+
+struct MultivariateCoordinate {
+  double xs[2];
+  double y;
+
+  MultivariateCoordinate(double x1, double x2, double y) {
+    this->xs[0] = x1;
+    this->xs[1] = x2;
+    this->y = y;
+  }
+};
+
 
 // Definizione della struttura dati per i dati del paziente
 struct PatientData {
@@ -117,37 +141,45 @@ void linear_regression(PatientData *data, int n, float *theta) {
   cudaFree(d_sse);
 }
 
-// Funzione per leggere i dati dal file CSV e salvarli in una matrice 2D
-void read_csv(string filename, vector<vector<float>> &data) {
-  ifstream file(filename);
-  if (file.is_open()) {
-    string line;
-    while (getline(file, line)) {
-      vector<float> row;
-      string field;
-      stringstream ss(line);
-      while (getline(ss, field, ',')) {
-        row.push_back(stof(field));
-      }
-      data.push_back(row);
-    }
-    file.close();
+
+
+std::vector<MultivariateCoordinate> read_mock_data(const char *filepath) {
+  std::vector<MultivariateCoordinate> data;
+
+  io::CSVReader<5> in(filepath);
+  in.read_header(io::ignore_extra_column, "name", "points", "skill", "assists", "salary");
+  std::string name, skill;
+  double points, assists, salary;
+
+  // read all rows
+  /*while (in.read_row(name, points, skill, assists, salary))
+      data.push_back(Coordinate {points, salary});*/
+
+  // read 10k rows
+  for (int i = 0; i < 10; i++) {
+    in.read_row(name, points, skill, assists, salary);
+    data.push_back(MultivariateCoordinate(points, assists, salary));
   }
+
+  std::cout << "data size: " << data.size() << std::endl;
+
+  return data;
 }
 
 int main() {
   // Lettura dei dati dal file CSV
-  vector<vector<float>> csv_data;
-  read_csv("data.csv", csv_data);
+  // vector<vector<float>> csv_data= read_mock_data("../data/insurance.csv");
+  
+  std::vector<MultivariateCoordinate> coordinates = read_mock_data("../data/insurance.csv");
   // Conversione dei dati in un vettore di strutture
-  int n = csv_data.size() - 1;
+  int n = coordinates.size() - 1;
   PatientData *data = new PatientData[n];
   for (int i = 0; i < n; i++) {
-    data[i].age = csv_data[i + 1][0];
-    data[i].sex = csv_data[i + 1][1];
-    data[i].smoker = csv_data[i + 1][2];
-    data[i].region = csv_data[i + 1][3];
-    data[i].charges = csv_data[i + 1][4];
+    data[i].age = coordinates[i + 1][0];
+    data[i].sex = coordinates[i + 1][1];
+    data[i].smoker = coordinates[i + 1][2];
+    data[i].region = coordinates[i + 1][3];
+    data[i].charges = coordinates[i + 1][4];
   }
 
   // Calcolo della regressione lineare
