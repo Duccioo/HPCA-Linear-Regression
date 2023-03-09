@@ -31,7 +31,7 @@ double getTime(void);
 
 int main(){
 
-	const int dataPoints = 500; //total number of data points, should be a multiples of 4
+	const int dataPoints = 705032704; //total number of data points, should be a multiples of 4
 
 	int i; // loop counter
 	double startTime, timeDuration; // timer values
@@ -78,10 +78,10 @@ int main(){
 
 	timeDuration = getTime() - startTime;
 
-	//output Results
-	for(i = 0; i < dataPoints; i++){
-		printf("regression[%d]: y = %f + %f x\n",i, a[i], b[i]);
-	}
+	// //output Results
+	// for(i = 0; i < dataPoints; i++){
+	// 	printf("regression[%d]: y = %f + %f x\n",i, a[i], b[i]);
+	// }
 
 	printf("compute time: %g s\n", timeDuration);
 
