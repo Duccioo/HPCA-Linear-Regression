@@ -17,16 +17,19 @@
 
 #include "linear_regression.cuh"
 
-#define INPUT_SIZE  20
-#define THREADS_PER_BLOCK 1
-#define ERROR_DIMENSIONS 3
+#define INPUT_SIZE 10000
+#define THREADS_PER_BLOCK 256 // numero di thread per block
+#define EPOCH 100
 
 void linear_regression_cpu(std::array<float, INPUT_SIZE> x, std::array<float, INPUT_SIZE> y, float bias, float intercept) {
 	float j_error = std::numeric_limits<float>::max();
 	
-	float learning_rate = 0.001;
+	float learning_rate = 0.0001;
 
-	while(j_error > 0.2) {
+	int n_epoch = 0;
+
+	while(n_epoch < EPOCH) {
+
 		//array for storing intermediate error levels
 		float errors[3] = {0, 0, 0};
 
@@ -50,26 +53,14 @@ void linear_regression_cpu(std::array<float, INPUT_SIZE> x, std::array<float, IN
 		bias = bias_new;
 		intercept = intercept_new;
 		j_error = errors[0];
+		n_epoch+=1;
 	}
 
 	std::cout << "CPU Results: Bias = " << bias << " and Intercept: " << intercept << std::endl;
-	std::cout << "CPU-Error: " << j_error  << std::endl;
-}
-
-// generate input data for regression
-void data_gen(std::array<float, INPUT_SIZE> * data_x, std::array<float, INPUT_SIZE> * data_y, int numValues){ 
-	printf("Input data is a linear function: 0.5 *x - 27 with randon noise added.\n");
-	int i;
-	for(i = 0; i<numValues; i++){
-		data_x[i] = (float)i;
-		data_y[i] = 0.5  * (float)i - 27 + (float)rand()/RAND_MAX - 0.5; // linear function with some random variations
-	}
 }
 
 int main(int argc, char **argv)
 {
-
-
 	// Total error
 	float j_error = std::numeric_limits<float>::max();
 
@@ -85,16 +76,11 @@ int main(int argc, char **argv)
 	float* h_results = (float*)malloc(error_size);
 
 	// Initial values that are used for the linear regression
-	// std::array<float, INPUT_SIZE> x = {0.00f, 0.22f, 0.24f, 0.33f, 0.37f, 0.44f, 0.44f, 0.57f, 0.93f, 1.00f};
-	// std::array<float, INPUT_SIZE> y = {0.00f, 0.22f, 0.58f, 0.20f, 0.55f, 0.39f, 0.54f, 0.53f, 1.00f, 0.61f};
-	std::array<float, INPUT_SIZE> x = {}
-	std::array<float, INPUT_SIZE> y = {}
-
-	data_gen()
+	std::array<float, INPUT_SIZE> x = {0.00f, 0.22f, 0.24f, 0.33f, 0.37f, 0.44f, 0.44f, 0.57f, 0.93f, 1.00f};
+	std::array<float, INPUT_SIZE> y = {0.00f, 0.22f, 0.58f, 0.20f, 0.55f, 0.39f, 0.54f, 0.53f, 1.00f, 0.61f};
 
 	// Compute random starting bias and intercept
-	// srand(time(NULL));
-	srand(42);
+	srand(time(NULL));
 	float bias = ((float) rand() / (RAND_MAX));
 	float intercept = ((float) rand() / (RAND_MAX));
 	float init_bias = bias;
@@ -111,7 +97,7 @@ int main(int argc, char **argv)
 	linear_regression_cpu(x, y, init_bias, init_intercept);
 	auto end = std::chrono::high_resolution_clock::now();
 	auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-	std::cout << "CPU-implementation execution time(ns): " << elapsed.count() <<"\n\n" << std::endl;
+	std::cout << "CPU-implementation execution time(ns): " << elapsed.count() << std::endl;
 
 	// Allocate memory on GPU for the device_x (d_x) and device_y (d_y) of earlier calculated size
 	float* d_x; float* d_y; float* d_bias; float* d_intercept; float* d_results;
@@ -129,7 +115,8 @@ int main(int argc, char **argv)
 
 	//Start timing the procedure
 	auto begin_gpu = std::chrono::high_resolution_clock::now();
-	while( j_error > 0.2) {
+	int n_epoch = 0;
+	while( n_epoch < EPOCH) {
 		// ALlocate memory for the pointers to the bias and intercept
 		cudaMalloc(&d_bias, sizeof(float));
 		cudaMalloc(&d_intercept, sizeof(float));
@@ -138,11 +125,10 @@ int main(int argc, char **argv)
 		cudaMemcpy(d_bias, h_bias, sizeof(float), cudaMemcpyHostToDevice);
 		cudaMemcpy(d_intercept, h_intercept, sizeof(float), cudaMemcpyHostToDevice);
 
-
 		// Launch kernel on GPU with pointers to data in GPU memory
-		int num_blocks = (INPUT_SIZE + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-		simple_linear_regression<<<1, INPUT_SIZE>>>(d_x, d_y, d_bias, d_intercept, d_results, INPUT_SIZE);
-		
+		dim3 dimGrid((INPUT_SIZE + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK);
+		dim3 dimBlock(THREADS_PER_BLOCK);
+		simple_linear_regression<<<dimGrid,dimBlock>>>(d_x, d_y, d_bias, d_intercept, d_results, INPUT_SIZE);
 
 		// Wait for all threads to return
 		cudaDeviceSynchronize();
@@ -169,17 +155,15 @@ int main(int argc, char **argv)
 		bias = bias_new;
 		intercept = intercept_new;
 		j_error = h_results[0];
+		n_epoch+=1;
 	}
-
 	//End timing and compute total execution time
 	auto end_gpu = std::chrono::high_resolution_clock::now();
 	auto elapsed_gpu = std::chrono::duration_cast<std::chrono::nanoseconds>(end_gpu - begin_gpu);
 
 	// Print out latest values for total error, and bias and intercept respective errors
 	std::cout << "GPU Results: Bias = " << bias << " and Intercept: " << intercept << std::endl;
-	std::cout << "GPU-Error: " << j_error << std::endl;
 	std::cout << "GPU-implementation execution time(ns): " << elapsed_gpu.count() << std::endl;
-
 
 
 	// Free memory on GPU

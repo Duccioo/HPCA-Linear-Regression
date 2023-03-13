@@ -1,16 +1,17 @@
 #define ERROR_DIMENSIONS 3
 
-__global__ void simple_linear_regression(float* d_x, float* d_y, float* d_bias, float* d_intercept, float* d_results, uint8_t in_size) {
+__global__ void simple_linear_regression(float* d_x, float* d_y, float* d_bias, float* d_intercept, float* d_results, int in_size) {
 	// Define shared memory in thread block where we maintian the collective sum of squared errors
 	__shared__ float errors[ERROR_DIMENSIONS];
 
-	// int index = blockIdx.x * blockDim.x + threadIdx.x;
-	// if (index < in_size) {
+	int index = blockIdx.x * blockDim.x + threadIdx.x;
+	if (index < in_size) {
 		// Retrieve thread index to use a array index
 		int index = threadIdx.x;
 
 		// Calculate y_predicted based on current bias and intercept
 		float y_pred = *d_bias + *d_intercept * d_x[index];
+		
 
 		// Calculate J for this specific index and store in errors index 0
 		float j = 0.5f * pow((d_y[index] - y_pred), 2);
@@ -38,5 +39,5 @@ __global__ void simple_linear_regression(float* d_x, float* d_y, float* d_bias, 
 			errors[1] = 0;
 			errors[2] = 0;
 		}
-	// }
+	}
 }

@@ -26,9 +26,9 @@ void cpu_regression(float* x, float* y, float* theta, int m, int n, int epochs, 
             }
         }
         
-        if (epoch%5==0){
-            printf("Epoch %d, Error: %f\n", epoch+1, error/m);
-        }
+        // if (epoch%5==0){
+        //     printf("Epoch %d, Error: %f\n", epoch+1, error/m);
+        // }
     }
 }
 
@@ -68,9 +68,9 @@ void gpu_regression(float* x, float* y, float* theta, int m, int n, int epochs, 
             }
             error += pow(y_hat - y[i], 2);
         }
-        if (epoch%5==0){
-            printf("Epoch %d, Error: %f\n", epoch+1, error/m);
-        }
+        // if (epoch%5==0){
+        //     printf("Epoch %d, Error: %f\n", epoch+1, error/m);
+        // }
     }
     cudaMemcpy(theta, d_theta, n*sizeof(float), cudaMemcpyDeviceToHost);
     cudaFree(d_x);
@@ -104,16 +104,28 @@ int main(int argc, char** argv) {
 
     // Esegui la regressione lineare sulla CPU e sulla GPU
     printf("Regressione lineare sulla CPU\n");
+    clock_t start_cpu = clock();
     cpu_regression(x, y, theta, m, n, epochs, alpha);
+    clock_t end_cpu = clock();
+    double time_cpu = (double) (end_cpu - start_cpu) / CLOCKS_PER_SEC;
     printf("Bias: %f, Pendenza: %f\n", theta[0], theta[1]);
+
+
     printf("\nRegressione lineare sulla GPU\n");
+    clock_t start_gpu = clock();
     gpu_regression(x, y, theta, m, n, epochs, alpha, threads_per_block);
+    clock_t end_gpu = clock();
+    double time_gpu = (double) (end_gpu - start_gpu) / CLOCKS_PER_SEC;
+    
     printf("Bias: %f, Pendenza: %f\n", theta[0], theta[1]);
 
     // Libera la memoria
     free(x);
     free(y);
     free(theta);
+
+    printf("\nTempo CPU: %f\n", time_cpu);
+    printf("Tempo GPU: %f\n", time_gpu);
 
     return 0;
 }
