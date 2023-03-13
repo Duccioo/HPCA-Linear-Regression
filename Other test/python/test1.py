@@ -1,28 +1,27 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.datasets import make_regression
 
-# Generate random dataset
-X, y = make_regression(n_samples=100, n_features=1, noise=20)
+# Random data
+N = 10
+M = 2
+input = np.random.random((N,M))
+print (input) 
 
-# Add a column of ones to X to account for the intercept term
-X = np.column_stack((np.ones(len(X)), X))
+# Setup matrices
+m = np.shape(input)[0]
+X = np.matrix([np.ones(m), input[:,0]]).T
+y = np.matrix(input[:,1]).T
 
-# Compute normal equation
-theta = np.linalg.inv(X.T.dot(X)).dot(X.T).dot(y)
+# Solve for projection matrix
+p_mat = np.linalg.inv(X.T.dot(X)).dot(X.T).dot(y)
+print (p_mat)
 
-# Plot initial data points
-plt.scatter(X[:,1], y, alpha=0.5)
+# Find regression line
+xx = np.linspace(0, 1, 2)
+yy = np.array(p_mat[0] + p_mat[1] * xx)
 
-# Plot regression line
-x_vals = np.array([X[:,1].min(), X[:,1].max()])
-y_vals = theta[0] + theta[1] * x_vals
-plt.plot(x_vals, y_vals, '--', color='red')
-
-# Add labels and title to plot
-plt.xlabel('X')
-plt.ylabel('y')
-plt.title('Linear Regression')
-
-# Show plot
+# Plot data, regression line
+plt.figure(1)
+plt.plot(xx, yy.T, color='b')
+plt.scatter(input[:,0], input[:,1], color='r')
 plt.show()

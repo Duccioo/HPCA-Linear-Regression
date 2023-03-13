@@ -13,12 +13,12 @@ def generate_data_and_save(n_samples, slope, intercept, noise_std, filename):
         filename (str): Name of the file to save the data to.
     """
     # Generate x values
-    x = np.linspace(0, n_samples, n_samples)
+    x = np.linspace(0, 1, n_samples)
 
     # Generate y values from linear equation with added noise
     y = slope * x + intercept + np.random.normal(0, noise_std, n_samples)
     
-    plt.plot(x,y)
+    plt.scatter(x,y)
     plt.title(filename)
     plt.show()
 
@@ -28,4 +28,4 @@ def generate_data_and_save(n_samples, slope, intercept, noise_std, filename):
     print(f"Data saved to {filename}")
     
 n_samples = 1000000
-generate_data_and_save(n_samples=n_samples, slope=2, intercept=1, noise_std=n_samples/5, filename="examples/single-linear-regression/data/genereted/data_"+str(n_samples)+"_2_1.csv")
+generate_data_and_save(n_samples=n_samples, slope=2, intercept=1, noise_std=0.2, filename="Other test/single-linear-regression/data/genereted/data_"+str(n_samples)+"_2_1.csv")
