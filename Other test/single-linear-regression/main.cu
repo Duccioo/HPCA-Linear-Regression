@@ -12,7 +12,7 @@
 
 #include "linear_regression.cuh"
 
-#define INPUT_SIZE 100000
+#define INPUT_SIZE 1000000
 #define ERROR_DIMENSIONS 3
 #define NUM_OF_THREADS 32
 
@@ -59,8 +59,11 @@ void linear_regression_cpu(std::array<float, INPUT_SIZE> x, std::array<float, IN
     
     float learning_rate = 0.00001;
 
+    int number_of_iteration_cpu = 0;
+
     while(j_error > 0.025) {
     
+        number_of_iteration_cpu++;
     
     //array for storing intermediate error levels
     float errors[3] = {0, 0, 0};
@@ -90,7 +93,7 @@ void linear_regression_cpu(std::array<float, INPUT_SIZE> x, std::array<float, IN
     // std::cout<< "J :" << j_error<< std::endl;
     }
 
-    std::cout << "CPU Results: Bias = " << bias << " and Intercept: " << intercept << std::endl;
+    std::cout << "CPU Results: Bias = " << bias << " and Intercept: " << intercept << " # Iterations: " << number_of_iteration_cpu << std::endl;
 }
 
 int main(int argc, char **argv)
@@ -116,7 +119,7 @@ int main(int argc, char **argv)
     std::array<float, INPUT_SIZE> x; //= {0.00f, 0.22f, 0.24f, 0.33f, 0.37f, 0.44f, 0.44f, 0.57f, 0.93f, 1.00f};
     std::array<float, INPUT_SIZE> y; //= {0.00f, 0.22f, 0.58f, 0.20f, 0.55f, 0.39f, 0.54f, 0.53f, 1.00f, 0.61f};
 
-    load_data("data/genereted/data_100000_2_1.csv",x,y);
+    load_data("data/genereted/data_1000000_2_1.csv",x,y);
 
     // Compute random starting bias and intercept
     srand(time(NULL));
@@ -138,9 +141,6 @@ int main(int argc, char **argv)
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
     std::cout << "C-implementation execution time(micro s): " << elapsed.count() << std::endl;
     
-
-
-
     // Allocate memory on GPU for the device_x (d_x) and device_y (d_y) of earlier calculated size
     float* d_x; float* d_y; float* d_bias; float* d_intercept; float* d_results;
     cudaMalloc(&d_x, input_size);
@@ -159,7 +159,11 @@ int main(int argc, char **argv)
     auto begin_gpu = std::chrono::high_resolution_clock::now();
     j_error = std::numeric_limits<float>::max(); 
 
+    int number_of_iteration_gpu = 0;
+
     do{
+        // Increase numeber of iterations
+        number_of_iteration_gpu++;
 
         // ALlocate memory for the pointers to the bias and intercept
         cudaMalloc(&d_bias, sizeof(float));
@@ -171,7 +175,7 @@ int main(int argc, char **argv)
 
         // Launch kernel on GPU with pointers to data in GPU memory
         // printf("\nLUNCH GPU KERNEL");
-        long int share_memory_dim = numBlocks * sizeof(float) * ERROR_DIMENSIONS;
+        // long int share_memory_dim = numBlocks * sizeof(float) * ERROR_DIMENSIONS;
         simple_linear_regression<<<numBlocks,NUM_OF_THREADS>>>(d_x, d_y, d_bias, d_intercept, d_results, INPUT_SIZE);
 
         // Wait for all threads to return
@@ -233,7 +237,7 @@ int main(int argc, char **argv)
 
     // Print out latest values for total error, and bias and intercept respective errors
     std::cout << "GPU Results: Bias = " << bias << " and Intercept: " << intercept << std::endl;
-    std::cout << "GPU-implementation execution time( micro s): " << elapsed_gpu.count() << std::endl;
+    std::cout << "GPU-implementation execution time( micro s): " << elapsed_gpu.count() << " # Iterations: "<< number_of_iteration_gpu <<std::endl;
 
 
     // Free memory on GPU
