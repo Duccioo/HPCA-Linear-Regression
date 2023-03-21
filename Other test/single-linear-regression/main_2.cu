@@ -21,7 +21,6 @@
 #define MIN_ERROR 0.2
 
 
-
 void load_data(std::string filename, std::array<float, INPUT_SIZE>& x, std::array<float, INPUT_SIZE>& y) {
     // Open file
     std::ifstream file(filename);
