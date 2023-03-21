@@ -9,15 +9,16 @@
 #include <limits>
 #include <fstream>
 #include <string>
+#include <sstream>
 
 #include "linear_regression.cuh"
 
-#define INPUT_SIZE 1000
+#define INPUT_SIZE 1000000
 #define ERROR_DIMENSIONS 3
 #define NUM_OF_THREADS 32
 #define MAX_EPOCH 10000
-#define LEARNING_RATE 0.0001
-#define MIN_ERROR 0.002
+#define LEARNING_RATE 0.00001
+#define MIN_ERROR 0.2
 
 
 
@@ -111,6 +112,8 @@ int main(int argc, char **argv)
     //Define number of blocks
     int numBlocks = (INPUT_SIZE + NUM_OF_THREADS - 1) / NUM_OF_THREADS;
 
+    std::cout<<"n-block :"<<numBlocks<<std::endl;
+
     // Total error
     float j_error = std::numeric_limits<float>::max();
 
@@ -129,7 +132,11 @@ int main(int argc, char **argv)
     std::array<float, INPUT_SIZE> x; //= {0.00f, 0.22f, 0.24f, 0.33f, 0.37f, 0.44f, 0.44f, 0.57f, 0.93f, 1.00f};
     std::array<float, INPUT_SIZE> y; //= {0.00f, 0.22f, 0.58f, 0.20f, 0.55f, 0.39f, 0.54f, 0.53f, 1.00f, 0.61f};
 
-    load_data("data/genereted/data_1000_2_1.csv",x,y);
+    std::ostringstream oss;
+    oss << "data/genereted/data_" << INPUT_SIZE << "_2_1.csv";
+    std::string path = oss.str();
+
+    load_data(path,x,y);
 
     // Compute random starting bias and intercept
     srand(42);
@@ -146,7 +153,7 @@ int main(int argc, char **argv)
 
     //Start measuring execution time of C tasks
     auto begin = std::chrono::high_resolution_clock::now();
-    linear_regression_cpu(x, y, init_bias, init_intercept);
+    // linear_regression_cpu(x, y, init_bias, init_intercept);
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
     std::cout << "CPU-implementation execution time(micro s): " << elapsed.count() << std::endl;
@@ -212,6 +219,8 @@ int main(int argc, char **argv)
 
         // printf("\n-----------------------------------------------------");
         // printf("\nSize of h_result : %lu",sizeof(h_results));
+
+        std::cout<<"numBlocks*3 : "<<numBlocks*3<<std::endl;
 
         for (int i=0; i<numBlocks*3; i++){
             // printf("\nh_result [%d] = %f",i,h_results[i]);
