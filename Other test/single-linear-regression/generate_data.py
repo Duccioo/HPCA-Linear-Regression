@@ -32,5 +32,5 @@ def generate_data_and_save(n_samples, slope, intercept, noise_std, filename):
 
     print(f"Data saved to {filename}")
     
-n_samples = 5000000
-generate_data_and_save(n_samples=n_samples, slope=2, intercept=0, noise_std=0.5, filename="Other test/single-linear-regression/data/genereted/data_"+str(n_samples)+"_2_1.csv")
+n_samples = 1000000
+generate_data_and_save(n_samples=n_samples, slope=2, intercept=0, noise_std=0.2, filename="Other test/single-linear-regression/data/genereted/data_"+str(n_samples)+"_2_1.csv")

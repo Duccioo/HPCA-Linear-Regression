@@ -6,7 +6,7 @@ import time
 degree = 1
 
 # Define the number of samples to generate
-num_samples = 1000000
+num_samples = 10
 
 # Generate a dataset with a polynomial relationship
 np.random.seed(0)
