@@ -1,0 +1,80 @@
+Ecco una versione modificata del codice che implementa una regressione multidimensionale:
+
+cpp
+Copy
+#define INPUT_SIZE 1000000
+#define DIMENSIONS 5     // Dimensionalità dei dati
+#define NUM_OF_THREADS 1024
+
+// Caricamento dei dati
+void load_data(std::string filename, std::array<float, INPUT_SIZE>& x1, std::array<float, INPUT_SIZE>& x2, 
+               std::array<float, INPUT_SIZE>& x3, std::array<float, INPUT_SIZE>& x4, std::array<float, INPUT_SIZE>& x5, 
+               std::array<float, INPUT_SIZE>& y) {
+    // ...
+}
+
+// Regressione lineare su CPU
+std::tuple<float,float,int> linear_regression_cpu(
+    const std::array<float, INPUT_SIZE>& x1, 
+    const std::array<float, INPUT_SIZE>& x2, 
+    const std::array<float, INPUT_SIZE>& x3,
+    const std::array<float, INPUT_SIZE>& x4,
+    const std::array<float, INPUT_SIZE>& x5,
+    const std::array<float, INPUT_SIZE>& y, 
+    float bias, float intercept1, float intercept2, float intercept3, float intercept4) {
+    // ...
+}
+
+// Kernel CUDA per la regressione multidimensionale 
+__global__ void multi_linear_regression(
+    float* d_x1, float* d_x2, float* d_x3, float* d_x4, float* d_x5,
+    float* d_y, 
+    float* d_bias, 
+    float* d_intercept1, float* d_intercept2, float* d_intercept3, float* d_intercept4,
+    float* d_results, int in_size) {
+    
+    __shared__ float errors[ERROR_DIMENSIONS];
+
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index < in_size) {
+        // Calcolo della previsione basata sugli intercetti e i coefficienti correnti
+        float y_pred = *d_bias + *d_intercept1 * d_x1[index]  + *d_intercept2 * d_x2[index] + 
+                        *d_intercept3 * d_x3[index] + *d_intercept4 * d_x4[index];  
+
+        // Calcolo dell'errore J per questo indice e memorizzazione in errors[0]
+        atomicAdd(&errors[0], 0.5f * pow((d_y[index] - y_pred), 2));
+
+        // Calcolo degli errori per gli intercetti e memorizzazione in errors[1]...errors[4]
+        atomicAdd(&errors[1], -(d_y[index] - y_pred));   // Bias
+        atomicAdd(&errors[2], -(d_y[index] - y_pred)*d_x1[index]);   // x1
+        atomicAdd(&errors[3], -(d_y[index] - y_pred)*d_x2[index]);   // x2
+        atomicAdd(&errors[4], -(d_y[index] - y_pred)*d_x3[index]);   // x3
+        atomicAdd(&errors[5], -(d_y[index] - y_pred)*d_x4[index]);   // x4
+
+        __syncthreads();
+
+        if (threadIdx.x == 0) {
+            d_results[(blockIdx.x * DIMENSIONS) + 0] = errors[0];
+            d_results[(blockIdx.x * DIMENSIONS) + 1] = errors[1];  
+            d_results[(blockIdx.x * DIMENSIONS) + 2] = errors[2];
+            d_results[(blockIdx.x * DIMENSIONS) + 3] = errors[3];
+            d_results[(blockIdx.x * DIMENSIONS) + 4] = errors[4];
+            d_results[(blockIdx.x * DIMENSIONS) + 5] = errors[5];
+
+            errors[0] = 0;
+            errors[1] = 0;  
+            errors[2] = 0;
+            errors[3] = 0;
+            errors[4] = 0;
+            errors[5] = 0;
+        }
+    }
+}
+I principali cambiamenti sono:
+
+Aumento della dimensionalità a 5 (DIMENSIONS = 5)
+Caricamento e passaggio di 5 array di input invece di 2 (x1, x2, x3, x4, x5)
+Calcolo della previsione basato su 5 intercetti invece di 2
+Memorizzazione di 6 errori nella memoria condivisa invece di 3 (uno per l'errore J e uno per ogni intercetto)
+Lettura e reset di 6 errori dalla memoria condivisa
+Spero questo ti possa essere d'aiuto! Fammi sapere se hai altre domande.

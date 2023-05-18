@@ -1,0 +1,57 @@
+Ecco una versione modificata della tua funzione che restituisce un vettore di dati compatibile con la funzione di regressione multilineare che ho fornito in precedenza:
+
+#include <unordered_map>
+#include <array>
+#include <vector>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+
+std::tuple<std::array<std::array<float, N>, INPUT_SIZE>, std::array<float, INPUT_SIZE>> load_data(std::string filename) {
+    // Open file
+    std::ifstream file(filename);
+
+    if (!file) {
+        std::cerr << "Failed to open file " << filename << std::endl;
+        return {};
+    }
+
+    // Read header
+    std::string line;
+    std::getline(file, line);
+
+    // Create map for third parameter
+    std::unordered_map<std::string, int> map = {{"low", 1}, {"medium", 2}, {"high", 3}};
+
+    // Read data
+    int i = 0;
+    std::array<std::array<float, N>, INPUT_SIZE> x;
+    std::array<float, INPUT_SIZE> y;
+    while (std::getline(file, line)) {
+        std::string name;
+        float x_val, y_val, z_val;
+        std::string third_param;
+        std::stringstream ss(line);
+        std::getline(ss, name, ',');
+        ss >> x_val;
+        ss.ignore();
+        std::getline(ss, third_param, ',');
+        ss >> y_val;
+        ss.ignore();
+        ss >> z_val;
+
+        x[i][0] = x_val;
+        x[i][1] = map[third_param];
+        x[i][2] = y_val;
+        y[i] = z_val;
+
+        i++;
+    }
+
+    printf("Closing the file \n");
+    // Close file
+    file.close();
+
+    return {x, y};
+}
+Questa funzione legge i dati dal file e restituisce una tupla contenente una matrice di dati x di dimensione INPUT_SIZE x N, dove N è il numero di variabili indipendenti e un vettore di dati y di dimensione INPUT_SIZE. Spero che questa versione della funzione ti sia utile!

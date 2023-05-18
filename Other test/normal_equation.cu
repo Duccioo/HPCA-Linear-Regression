@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <cuda_runtime.h>
 
-#define THREADS_PER_BLOCK 32
+#define THREADS_PER_BLOCK 128
 
 __global__ void matrixMultiply(float *a, float *b, float *c, int m, int n, int k) {
     int row = blockIdx.y * blockDim.y + threadIdx.y;
