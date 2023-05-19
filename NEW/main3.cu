@@ -17,7 +17,7 @@
 
 #define INPUT_SIZE 160000
 #define ERROR_DIMENSIONS 5
-#define NUM_OF_THREADS 64
+#define NUM_OF_THREADS 1
 // #define MAX_J_ERROR 0.0202
 #define MAX_J_ERROR 0.01
 #define LEARNING_RATE 0.000001
@@ -179,10 +179,10 @@ int main(int argc, char **argv)
 
     // Compute random starting intercept and slope
     srand(time(NULL));
-    float intercept = ((float) rand() / (RAND_MAX));
-    float slope1 = ((float) rand() / (RAND_MAX));
-    float slope2 = ((float) rand() / (RAND_MAX));
-    float slope3 = ((float) rand() / (RAND_MAX));
+    float intercept = 0;
+    float slope1 = 0;
+    float slope2 = 0;
+    float slope3 = 0;
     float init_intercept = intercept;
     float init_slope1 = slope1;
     float init_slope2 = slope2;
