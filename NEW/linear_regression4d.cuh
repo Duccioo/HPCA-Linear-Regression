@@ -30,11 +30,11 @@ __global__ void simple_linear_regression(float* d_x1,float* d_x2,float* d_x3, fl
         // Update the output values
         if (threadIdx.x == 0) {
             // Write to host memory
-            d_results[(blockIdx.x * 3) + 0] = errors[0];
-            d_results[(blockIdx.x * 3) + 1] = errors[1];
-            d_results[(blockIdx.x * 3) + 2] = errors[2];
-            d_results[(blockIdx.x * 3) + 3] = errors[3];
-            d_results[(blockIdx.x * 3) + 4] = errors[4];
+            d_results[(blockIdx.x * 5) + 0] = errors[0];
+            d_results[(blockIdx.x * 5) + 1] = errors[1];
+            d_results[(blockIdx.x * 5) + 2] = errors[2];
+            d_results[(blockIdx.x * 5) + 3] = errors[3];
+            d_results[(blockIdx.x * 5) + 4] = errors[4];
 
             // Reset shared memory for the next iteration of the algorithm
             errors[0] = 0;

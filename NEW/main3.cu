@@ -17,7 +17,7 @@
 
 #define INPUT_SIZE 160000
 #define ERROR_DIMENSIONS 5
-#define NUM_OF_THREADS 1
+#define NUM_OF_THREADS 512
 // #define MAX_J_ERROR 0.0202
 #define MAX_J_ERROR 0.01
 #define LEARNING_RATE 0.000001
@@ -210,6 +210,7 @@ int main(int argc, char **argv)
     // std::cout << "CPU Results: intercept = " << intercept_cpu << " and slope: " << slope_cpu << " # Iterations: " << number_of_iteration_cpu << std::endl;
 
     std::cout << "---------------     CPU     ------------------"<<std::endl;
+    std::cout << "GPU-implementation execution time [TOTAL] (micro s):: "<<elapsed_cpu_run_time.count() + elapsed_cpu_allocate.count()<<std::endl;
     std::cout << "CPU-implementation execution time (micro s): " << elapsed_cpu_run_time.count() << std::endl;
     std::cout << "CPU-allocate time (micro s): "<<elapsed_cpu_allocate.count()<<std::endl;
 
