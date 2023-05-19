@@ -19,7 +19,7 @@
 #define ERROR_DIMENSIONS 5
 #define NUM_OF_THREADS 512
 // #define MAX_J_ERROR 0.0202
-#define MAX_J_ERROR 0.01
+#define MAX_J_ERROR 0.005
 #define LEARNING_RATE 0.000001
 #define MAX_ITER 50000
 #define NUM_REP 1
@@ -352,7 +352,7 @@ int main(int argc, char **argv)
         
         auto begin_gpu_get_results_update_do = std::chrono::high_resolution_clock::now();
 
-        for (int i=0; i<numBlocks*3; i++){
+        for (int i=0; i<numBlocks*5; i++){
             // printf("\nh_result [%d] = %f",i,h_results[i]);
             if (i%ERROR_DIMENSIONS == 0){
                 j_error += h_results[i];
