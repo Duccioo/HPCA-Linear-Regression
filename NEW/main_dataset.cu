@@ -17,12 +17,12 @@
 
 #define INPUT_SIZE 160000
 #define ERROR_DIMENSIONS 5
-#define NUM_OF_THREADS 64
+#define NUM_OF_THREADS 32
 // #define MAX_J_ERROR 0.0202
 #define MAX_J_ERROR 0.01
 #define LEARNING_RATE 0.000001
 #define MAX_ITER 50000
-#define NUM_REP 10
+#define NUM_REP 5
 
 auto total_cpu_results_update = std::chrono::high_resolution_clock::duration::zero();
 
@@ -119,14 +119,23 @@ std::tuple<float,float,float,float,int> linear_regression_cpu(const std::array<f
     return {intercept,slope1,slope2,slope3,number_of_iteration_cpu};
 }
 
+// #define INPUT_SIZE 160000
+// #define ERROR_DIMENSIONS 5
+// #define NUM_OF_THREADS 32
+// // #define MAX_J_ERROR 0.0202
+// #define MAX_J_ERROR 0.01
+// #define LEARNING_RATE 0.000001
+// #define MAX_ITER 50000
+// #define NUM_REP 30
+
+
 int main(int argc, char **argv)
 {
     for (int i=0;i<NUM_REP;i++){
-    std::ofstream savefile;
 
-    
+    std::ofstream savefile;
     std::ostringstream file_path;
-    file_path<<INPUT_SIZE<<"_save.txt";
+    file_path<<"save/"<<NUM_REP<<"_"<<NUM_OF_THREADS<<"_"<<MAX_J_ERROR<<"_"<<LEARNING_RATE<<"_save.txt";
     std::string path_save = file_path.str();
     // apertura del file in modalità "app"
     savefile.open(path_save, std::ios_base::app);
@@ -281,7 +290,7 @@ int main(int argc, char **argv)
     auto total_gpu_kernel_do = std::chrono::high_resolution_clock::duration::zero();
     auto total_gpu_copy_toHost_do = std::chrono::high_resolution_clock::duration::zero();
     auto total_gpu_get_results_update_do = std::chrono::high_resolution_clock::duration::zero();
-
+    auto total_gpu_free_do = std::chrono::high_resolution_clock::duration::zero();
     auto begin_gpu = std::chrono::high_resolution_clock::now();
 
     do{
@@ -334,11 +343,16 @@ int main(int argc, char **argv)
             break;
         }
 
+        auto begin_gpu_free_do = std::chrono::high_resolution_clock::now();
+
         // Free memory, on the next iteration we will allocate this memory again.
         cudaFree(d_intercept);
         cudaFree(d_slope1);
         cudaFree(d_slope2);
         cudaFree(d_slope3);
+
+        auto end_gpu_free_do = std::chrono::high_resolution_clock::now();
+        total_gpu_free_do += end_gpu_free_do - begin_gpu_free_do;
 
         float j_error = 0;
         float intercept_error = 0;
@@ -406,6 +420,17 @@ int main(int argc, char **argv)
 
     } while( j_error > MAX_J_ERROR);
 
+    auto begin_gpu_free = std::chrono::high_resolution_clock::now();
+
+    // Free memory on GPU
+    cudaFree(d_x1);
+    cudaFree(d_x2);
+    cudaFree(d_x3);
+    cudaFree(d_y);
+
+    auto end_gpu_free = std::chrono::high_resolution_clock::now();
+    auto total_gpu_free = std::chrono::duration_cast<std::chrono::microseconds>(end_gpu_free - begin_gpu_free);
+
     //End timing and compute total execution time
     auto end_gpu = std::chrono::high_resolution_clock::now();
     auto elapsed_gpu = std::chrono::duration_cast<std::chrono::microseconds>(end_gpu - begin_gpu);
@@ -416,31 +441,28 @@ int main(int argc, char **argv)
     auto total_gpu_kernel_do_micro = std::chrono::duration_cast<std::chrono::microseconds>(total_gpu_kernel_do);
     auto total_gpu_copy_toHost_do_micro = std::chrono::duration_cast<std::chrono::microseconds>(total_gpu_copy_toHost_do);
     auto total_gpu_get_results_update_do_micro = std::chrono::duration_cast<std::chrono::microseconds>(total_gpu_get_results_update_do);
+    auto total_gpu_free_do_micro = std::chrono::duration_cast<std::chrono::microseconds>(total_gpu_free_do);
 
     // Print out latest values for total error, and intercept and slope respective errors
     std::cout << "---------------     GPU     ------------------"<<std::endl;
-    std::cout << "GPU-implementation execution time [TOTAL] (micro s): " <<elapsed_gpu_copy.count() + elapsed_gpu_allocate.count() + total_gpu_allocate_do_micro.count() + total_gpu_copy_toDevice_do_micro.count() + total_gpu_kernel_do_micro.count() + total_gpu_copy_toHost_do_micro.count() + total_gpu_get_results_update_do_micro.count() <<std::endl;
+    std::cout << "GPU-implementation execution time [TOTAL] (micro s): " <<elapsed_gpu_copy.count() + elapsed_gpu_allocate.count() + total_gpu_allocate_do_micro.count() + total_gpu_copy_toDevice_do_micro.count() + total_gpu_kernel_do_micro.count() + total_gpu_copy_toHost_do_micro.count() + total_gpu_get_results_update_do_micro.count()+total_gpu_free_do_micro.count()+total_gpu_free.count() <<std::endl;
     std::cout << "GPU-allocate time (micro s): "<<elapsed_gpu_allocate.count()<<std::endl;
     std::cout << "GPU-copy time (micro s): "<<elapsed_gpu_copy.count()<<std::endl;
     std::cout << "GPU-allocate do_cycle time (micro s): "<<total_gpu_allocate_do_micro.count()<<std::endl;
     std::cout << "GPU-copy do_cycle time (micro s): "<<total_gpu_copy_toDevice_do_micro.count()<<std::endl;
     std::cout << "GPU-kernel do_cycle(micro s): "<<total_gpu_kernel_do_micro.count()<<std::endl;
     std::cout << "GPU-copy do_cycle time (micro s): "<<total_gpu_copy_toHost_do_micro.count()<<std::endl;
-    std::cout << "GPU-get results & update(micro s): "<<total_gpu_get_results_update_do_micro.count()<<std::endl;
+    std::cout << "GPU-freeCuda do_cycle (micro s): "<<total_gpu_get_results_update_do_micro.count()<<std::endl;
+    std::cout << "GPU-get results & update (micro s): "<<total_gpu_free_do_micro.count()<<std::endl;
+    std::cout << "GPU-free CUDA (micro s): "<<total_gpu_free.count()<<std::endl;
 
     //save data on the savefile
     // savefile<<elapsed_gpu.count()<<"\t"<<elapsed_gpu_allocate.count()<<"\t"<<elapsed_gpu_copy.count()<<"\t"<<total_gpu_allocate_do_micro.count()<<"\t"<<total_gpu_copy_toDevice_do_micro.count()<<"\t"<<total_gpu_kernel_do_micro.count()<<"\t"<<total_gpu_get_results_update_do_micro.count()<<std::endl;
     // savefile<<elapsed_gpu.count()<<"\t"<<elapsed_gpu_allocate.count()<<"\t"<<elapsed_gpu_copy.count()<<"\t"<<total_gpu_allocate_do_micro.count()<<"\t"<<total_gpu_copy_toDevice_do_micro.count()<<"\t"<<total_gpu_kernel_do_micro.count()<<"\t"<<total_gpu_copy_toHost_do_micro.count()<<"\t"<<total_gpu_get_results_update_do_micro.count()<<std::endl;
-    savefile<<elapsed_gpu_allocate.count()<<"\t"<<elapsed_gpu_copy.count()<<"\t"<<total_gpu_allocate_do_micro.count()<<"\t"<<total_gpu_copy_toDevice_do_micro.count()<<"\t"<<total_gpu_kernel_do_micro.count()<<"\t"<<total_gpu_copy_toHost_do_micro.count()<<"\t"<<total_gpu_get_results_update_do_micro.count()<<std::endl;
+    savefile<<elapsed_gpu_allocate.count()<<"\t"<<elapsed_gpu_copy.count()<<"\t"<<total_gpu_allocate_do_micro.count()<<"\t"<<total_gpu_copy_toDevice_do_micro.count()<<"\t"<<total_gpu_kernel_do_micro.count()<<"\t"<<total_gpu_copy_toHost_do_micro.count()<<"\t"<<total_gpu_get_results_update_do_micro.count()<<"\t"<<total_gpu_free.count()<<std::endl;
 
     std::cout << "GPU Results:\n intercept = " << intercept << " slope1: " << slope1 << " slope2: " << slope2 << " slope3: " << slope3 << " # Iterations: "<< number_of_iteration_gpu <<  std::endl;
 
-
-    // Free memory on GPU
-    cudaFree(d_x1);
-    cudaFree(d_x2);
-    cudaFree(d_x3);
-    cudaFree(d_y);
 }
     return 0;
 }
