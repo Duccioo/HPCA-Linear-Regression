@@ -17,12 +17,12 @@
 
 #define INPUT_SIZE 160000
 #define ERROR_DIMENSIONS 5
-#define NUM_OF_THREADS 512
+#define NUM_OF_THREADS 64
 // #define MAX_J_ERROR 0.0202
-#define MAX_J_ERROR 0.005
+#define MAX_J_ERROR 0.01
 #define LEARNING_RATE 0.000001
 #define MAX_ITER 50000
-#define NUM_REP 1
+#define NUM_REP 10
 
 auto total_cpu_results_update = std::chrono::high_resolution_clock::duration::zero();
 
@@ -240,6 +240,8 @@ int main(int argc, char **argv)
     float* d_slope3;
     float* d_results;
 
+    cudaFree(0);
+
     auto begin_gpu_allocate = std::chrono::high_resolution_clock::now();
 
     cudaMalloc(&d_x1, input_size);
@@ -277,6 +279,7 @@ int main(int argc, char **argv)
     auto total_gpu_allocate_do = std::chrono::high_resolution_clock::duration::zero();
     auto total_gpu_copy_toDevice_do = std::chrono::high_resolution_clock::duration::zero();
     auto total_gpu_kernel_do = std::chrono::high_resolution_clock::duration::zero();
+    auto total_gpu_copy_toHost_do = std::chrono::high_resolution_clock::duration::zero();
     auto total_gpu_get_results_update_do = std::chrono::high_resolution_clock::duration::zero();
 
     auto begin_gpu = std::chrono::high_resolution_clock::now();
@@ -319,10 +322,10 @@ int main(int argc, char **argv)
 
         // Retrieve the GPU out value and store in host memory
         // auto begin_gpu_results_mem_copy = std::chrono::high_resolution_clock::now();
-        auto begin_gpu_copy_toDevice_do2 = std::chrono::high_resolution_clock::now();
+        auto begin_gpu_copy_toHost_do2 = std::chrono::high_resolution_clock::now();
         cudaMemcpy(h_results, d_results, error_size * numBlocks * sizeof(float), cudaMemcpyDeviceToHost);
-        auto end_gpu_copy_toDevice_do2 = std::chrono::high_resolution_clock::now();
-        total_gpu_copy_toDevice_do += end_gpu_copy_toDevice_do2 - begin_gpu_copy_toDevice_do2;
+        auto end_gpu_copy_toHost_do2 = std::chrono::high_resolution_clock::now();
+        total_gpu_copy_toHost_do += end_gpu_copy_toHost_do2 - begin_gpu_copy_toHost_do2;
 
         // Check if a CUDA error has occurred.
         cudaError_t err = cudaGetLastError();
@@ -408,25 +411,27 @@ int main(int argc, char **argv)
     auto elapsed_gpu = std::chrono::duration_cast<std::chrono::microseconds>(end_gpu - begin_gpu);
 
     //Convert time counter in micro seconds
-
     auto total_gpu_allocate_do_micro = std::chrono::duration_cast<std::chrono::microseconds>(total_gpu_allocate_do);
     auto total_gpu_copy_toDevice_do_micro = std::chrono::duration_cast<std::chrono::microseconds>(total_gpu_copy_toDevice_do);
     auto total_gpu_kernel_do_micro = std::chrono::duration_cast<std::chrono::microseconds>(total_gpu_kernel_do);
+    auto total_gpu_copy_toHost_do_micro = std::chrono::duration_cast<std::chrono::microseconds>(total_gpu_copy_toHost_do);
     auto total_gpu_get_results_update_do_micro = std::chrono::duration_cast<std::chrono::microseconds>(total_gpu_get_results_update_do);
 
     // Print out latest values for total error, and intercept and slope respective errors
     std::cout << "---------------     GPU     ------------------"<<std::endl;
-    std::cout << "GPU-implementation execution time [TOTAL] (micro s): " << elapsed_gpu.count()  <<std::endl;
-    std::cout << "                                                     " << total_gpu_allocate_do_micro.count() + total_gpu_copy_toDevice_do_micro.count() + total_gpu_kernel_do_micro.count() + total_gpu_get_results_update_do_micro.count() <<std::endl;
+    std::cout << "GPU-implementation execution time [TOTAL] (micro s): " <<elapsed_gpu_copy.count() + elapsed_gpu_allocate.count() + total_gpu_allocate_do_micro.count() + total_gpu_copy_toDevice_do_micro.count() + total_gpu_kernel_do_micro.count() + total_gpu_copy_toHost_do_micro.count() + total_gpu_get_results_update_do_micro.count() <<std::endl;
     std::cout << "GPU-allocate time (micro s): "<<elapsed_gpu_allocate.count()<<std::endl;
     std::cout << "GPU-copy time (micro s): "<<elapsed_gpu_copy.count()<<std::endl;
     std::cout << "GPU-allocate do_cycle time (micro s): "<<total_gpu_allocate_do_micro.count()<<std::endl;
     std::cout << "GPU-copy do_cycle time (micro s): "<<total_gpu_copy_toDevice_do_micro.count()<<std::endl;
     std::cout << "GPU-kernel do_cycle(micro s): "<<total_gpu_kernel_do_micro.count()<<std::endl;
+    std::cout << "GPU-copy do_cycle time (micro s): "<<total_gpu_copy_toHost_do_micro.count()<<std::endl;
     std::cout << "GPU-get results & update(micro s): "<<total_gpu_get_results_update_do_micro.count()<<std::endl;
 
     //save data on the savefile
-    savefile<<elapsed_gpu.count()<<"\t"<<elapsed_gpu_allocate.count()<<"\t"<<elapsed_gpu_copy.count()<<"\t"<<total_gpu_allocate_do_micro.count()<<"\t"<<total_gpu_copy_toDevice_do_micro.count()<<"\t"<<total_gpu_kernel_do_micro.count()<<"\t"<<total_gpu_get_results_update_do_micro.count()<<std::endl;
+    // savefile<<elapsed_gpu.count()<<"\t"<<elapsed_gpu_allocate.count()<<"\t"<<elapsed_gpu_copy.count()<<"\t"<<total_gpu_allocate_do_micro.count()<<"\t"<<total_gpu_copy_toDevice_do_micro.count()<<"\t"<<total_gpu_kernel_do_micro.count()<<"\t"<<total_gpu_get_results_update_do_micro.count()<<std::endl;
+    // savefile<<elapsed_gpu.count()<<"\t"<<elapsed_gpu_allocate.count()<<"\t"<<elapsed_gpu_copy.count()<<"\t"<<total_gpu_allocate_do_micro.count()<<"\t"<<total_gpu_copy_toDevice_do_micro.count()<<"\t"<<total_gpu_kernel_do_micro.count()<<"\t"<<total_gpu_copy_toHost_do_micro.count()<<"\t"<<total_gpu_get_results_update_do_micro.count()<<std::endl;
+    savefile<<elapsed_gpu_allocate.count()<<"\t"<<elapsed_gpu_copy.count()<<"\t"<<total_gpu_allocate_do_micro.count()<<"\t"<<total_gpu_copy_toDevice_do_micro.count()<<"\t"<<total_gpu_kernel_do_micro.count()<<"\t"<<total_gpu_copy_toHost_do_micro.count()<<"\t"<<total_gpu_get_results_update_do_micro.count()<<std::endl;
 
     std::cout << "GPU Results:\n intercept = " << intercept << " slope1: " << slope1 << " slope2: " << slope2 << " slope3: " << slope3 << " # Iterations: "<< number_of_iteration_gpu <<  std::endl;
 
