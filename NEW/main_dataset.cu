@@ -15,14 +15,14 @@
 
 #include "linear_regression4d.cuh"
 
-#define INPUT_SIZE 160000
+#define INPUT_SIZE 144000
 #define ERROR_DIMENSIONS 5
-#define NUM_OF_THREADS 32
+#define NUM_OF_THREADS 128
 // #define MAX_J_ERROR 0.0202
-#define MAX_J_ERROR 0.01
+#define MAX_J_ERROR 0.00385058
 #define LEARNING_RATE 0.000001
 #define MAX_ITER 50000
-#define NUM_REP 5
+#define NUM_REP 1
 
 auto total_cpu_results_update = std::chrono::high_resolution_clock::duration::zero();
 
@@ -110,6 +110,11 @@ std::tuple<float,float,float,float,int> linear_regression_cpu(const std::array<f
         slope2 = slope_new_2;
         slope3 = slope_new_3;
         j_error = errors[0];
+        // DEVELOPMENT MODE
+        j_error = 0;
+        // ALLERT ! ----------------------------------------------------------------
+        // ALLERT ! ----------------------------------------------------------------
+
         auto end_results_update_while = std::chrono::high_resolution_clock::now();
         total_cpu_results_update += end_results_update_while - start_results_update_while;
 
@@ -135,7 +140,7 @@ int main(int argc, char **argv)
 
     std::ofstream savefile;
     std::ostringstream file_path;
-    file_path<<"save/"<<NUM_REP<<"_"<<NUM_OF_THREADS<<"_"<<MAX_J_ERROR<<"_"<<LEARNING_RATE<<"_save.txt";
+    file_path<<"save/_"<<NUM_REP<<"_"<<NUM_OF_THREADS<<"_"<<MAX_J_ERROR<<"_"<<LEARNING_RATE<<"_save.txt";
     std::string path_save = file_path.str();
     // apertura del file in modalità "app"
     savefile.open(path_save, std::ios_base::app);
@@ -184,7 +189,7 @@ int main(int argc, char **argv)
     std::array<float, INPUT_SIZE> x3;
     std::array<float, INPUT_SIZE> y; 
 
-    load_data("data/output_norm.csv", x1, x2, x3, y);
+    load_data("data/train_2.csv", x1, x2, x3, y);
 
     // Compute random starting intercept and slope
     srand(time(NULL));
@@ -248,6 +253,7 @@ int main(int argc, char **argv)
     float* d_slope2;
     float* d_slope3;
     float* d_results;
+
 
     cudaFree(0);
 
@@ -401,6 +407,7 @@ int main(int argc, char **argv)
         slope3 = slope3_new;
         j_error = j_error / INPUT_SIZE;
 
+        std::cout << "j_error: " << j_error<<std::endl;
         if (j_error < MAX_J_ERROR){
             break;
         }
@@ -460,7 +467,8 @@ int main(int argc, char **argv)
     // savefile<<elapsed_gpu.count()<<"\t"<<elapsed_gpu_allocate.count()<<"\t"<<elapsed_gpu_copy.count()<<"\t"<<total_gpu_allocate_do_micro.count()<<"\t"<<total_gpu_copy_toDevice_do_micro.count()<<"\t"<<total_gpu_kernel_do_micro.count()<<"\t"<<total_gpu_get_results_update_do_micro.count()<<std::endl;
     // savefile<<elapsed_gpu.count()<<"\t"<<elapsed_gpu_allocate.count()<<"\t"<<elapsed_gpu_copy.count()<<"\t"<<total_gpu_allocate_do_micro.count()<<"\t"<<total_gpu_copy_toDevice_do_micro.count()<<"\t"<<total_gpu_kernel_do_micro.count()<<"\t"<<total_gpu_copy_toHost_do_micro.count()<<"\t"<<total_gpu_get_results_update_do_micro.count()<<std::endl;
     savefile<<elapsed_gpu_allocate.count()<<"\t"<<elapsed_gpu_copy.count()<<"\t"<<total_gpu_allocate_do_micro.count()<<"\t"<<total_gpu_copy_toDevice_do_micro.count()<<"\t"<<total_gpu_kernel_do_micro.count()<<"\t"<<total_gpu_copy_toHost_do_micro.count()<<"\t"<<total_gpu_get_results_update_do_micro.count()<<"\t"<<total_gpu_free.count()<<std::endl;
-
+    
+    std::cout.precision(17);
     std::cout << "GPU Results:\n intercept = " << intercept << " slope1: " << slope1 << " slope2: " << slope2 << " slope3: " << slope3 << " # Iterations: "<< number_of_iteration_gpu <<  std::endl;
 
 }

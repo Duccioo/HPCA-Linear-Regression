@@ -1,0 +1,9 @@
+,0
+allocate time [gpu],593.6
+copy time [gpu],685.0
+allocate do_cycle time [gpu],460.6
+copy to_device do_cycle time [gpu],10359.4
+kernel do_cycle [gpu],22590.0
+copy to_host do_cycle time [gpu],11071.8
+freeCuda do_cycle [gpu],9310.2
+get results & update [gpu],123.8
