@@ -22,8 +22,7 @@ font = {'weight': 'bold',
 
 matplotlib.rc('font', **font)
 
-
-folder_path = 'NEW/save/0.01'  # Specify the folder path
+folder_path = 'NEW/save'  # Specify the folder path
 
 # Sort the file names alphabetically
 file_names = os.listdir(folder_path)
@@ -61,7 +60,7 @@ for filename in file_names:
             if len(values) == 2:
                 data_cpu.append(
                     {'Execution': int(values[0]), 'Allocate': int(values[1])})
-            elif len(values) == 8:
+            elif len(values) > 2:
                 data_gpu.append({'Value{}'.format(i+1): int(value)
                                 for i, value in enumerate(values)})
 
@@ -89,13 +88,9 @@ for filename in file_names:
         # print(cpu_mean)
         # print(gpu_mean)
 
-        gpu_name = 'GPU ['+params[2] + ' th ' \
-                          + params[3]+' j_err '\
-                          + params[4]+' lr ]'
+        gpu_name = 'GPU ['+params[5]+' data points'
 
-        cpu_name = 'CPU ['+params[2] + ' th ' \
-                          + params[3]+' j_err '\
-                          + params[4]+' lr ]'
+        cpu_name = 'CPU ['+params[5]+' data points'
 
         gpu_mean.index = [gpu_name]
         cpu_mean.index = [cpu_name]

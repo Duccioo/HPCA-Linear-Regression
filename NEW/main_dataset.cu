@@ -7,7 +7,6 @@
 #include <chrono>
 #include <cmath>
 #include <limits>
-
 #include <fstream>
 #include <string>
 #include <tuple>
@@ -15,14 +14,16 @@
 
 #include "linear_regression4d.cuh"
 
-#define INPUT_SIZE 144000
+#define INPUT_SIZE 500000
 #define ERROR_DIMENSIONS 5
 #define NUM_OF_THREADS 128
 // #define MAX_J_ERROR 0.00385058
-#define MAX_J_ERROR 0.00385058
+#define MAX_J_ERROR 0.01
 #define LEARNING_RATE 0.000001
 #define MAX_ITER 50000
-#define NUM_REP 1
+#define NUM_REP 20
+
+auto dataset_folder = "data/genereted/4D/500000_dataset.csv";
 
 auto total_cpu_results_update = std::chrono::high_resolution_clock::duration::zero();
 
@@ -111,7 +112,7 @@ std::tuple<float,float,float,float,int> linear_regression_cpu(const std::array<f
         slope3 = slope_new_3;
         j_error = errors[0];
         // DEVELOPMENT MODE
-        j_error = 0;
+        // j_error = 0;
         // ALLERT ! ----------------------------------------------------------------
         // ALLERT ! ----------------------------------------------------------------
 
@@ -189,10 +190,10 @@ int main(int argc, char **argv)
     std::array<float, INPUT_SIZE> x3;
     std::array<float, INPUT_SIZE> y; 
 
-    load_data("data/train_2.csv", x1, x2, x3, y);
+    // load_data("data/train_2.csv", x1, x2, x3, y);
+    load_data(dataset_folder, x1, x2, x3, y);
 
     // Compute random starting intercept and slope
-    srand(time(NULL));
     float intercept = 0;
     float slope1 = 0;
     float slope2 = 0;
