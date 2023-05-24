@@ -23,12 +23,12 @@ font = {'weight': 'bold',
 matplotlib.rc('font', **font)
 
 
-folder_path = 'NEW/save'  # Specify the folder path
+folder_path = 'NEW/save/0.01'  # Specify the folder path
 
 # Sort the file names alphabetically
 file_names = os.listdir(folder_path)
-# file_names.sort(key=lambda x: [int(c) if c.isdigit(
-# ) else c.lower() for c in re.split(r'(\d+)', x)], reverse=True)
+file_names.sort(key=lambda x: [int(c) if c.isdigit(
+) else c.lower() for c in re.split(r'(\d+)', x)], reverse=True)
 
 
 all_dataframe = pd.DataFrame()

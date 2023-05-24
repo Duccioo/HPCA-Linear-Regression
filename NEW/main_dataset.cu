@@ -18,7 +18,7 @@
 #define INPUT_SIZE 144000
 #define ERROR_DIMENSIONS 5
 #define NUM_OF_THREADS 128
-// #define MAX_J_ERROR 0.0202
+// #define MAX_J_ERROR 0.00385058
 #define MAX_J_ERROR 0.00385058
 #define LEARNING_RATE 0.000001
 #define MAX_ITER 50000
@@ -407,7 +407,7 @@ int main(int argc, char **argv)
         slope3 = slope3_new;
         j_error = j_error / INPUT_SIZE;
 
-        std::cout << "j_error: " << j_error<<std::endl;
+        // std::cout << "j_error: " << j_error<<std::endl;
         if (j_error < MAX_J_ERROR){
             break;
         }
