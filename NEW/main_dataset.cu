@@ -466,7 +466,7 @@ int main(int argc, char **argv)
     //save data on the savefile
     // savefile<<elapsed_gpu.count()<<"\t"<<elapsed_gpu_allocate.count()<<"\t"<<elapsed_gpu_copy.count()<<"\t"<<total_gpu_allocate_do_micro.count()<<"\t"<<total_gpu_copy_toDevice_do_micro.count()<<"\t"<<total_gpu_kernel_do_micro.count()<<"\t"<<total_gpu_get_results_update_do_micro.count()<<std::endl;
     // savefile<<elapsed_gpu.count()<<"\t"<<elapsed_gpu_allocate.count()<<"\t"<<elapsed_gpu_copy.count()<<"\t"<<total_gpu_allocate_do_micro.count()<<"\t"<<total_gpu_copy_toDevice_do_micro.count()<<"\t"<<total_gpu_kernel_do_micro.count()<<"\t"<<total_gpu_copy_toHost_do_micro.count()<<"\t"<<total_gpu_get_results_update_do_micro.count()<<std::endl;
-    savefile<<elapsed_gpu_allocate.count()<<"\t"<<elapsed_gpu_copy.count()<<"\t"<<total_gpu_allocate_do_micro.count()<<"\t"<<total_gpu_copy_toDevice_do_micro.count()<<"\t"<<total_gpu_kernel_do_micro.count()<<"\t"<<total_gpu_copy_toHost_do_micro.count()<<"\t"<<total_gpu_get_results_update_do_micro.count()<<"\t"<<total_gpu_free.count()<<std::endl;
+    savefile<<elapsed_gpu_allocate.count()<<"\t"<<elapsed_gpu_copy.count()<<"\t"<<total_gpu_allocate_do_micro.count()<<"\t"<<total_gpu_copy_toDevice_do_micro.count()<<"\t"<<total_gpu_kernel_do_micro.count()<<"\t"<<total_gpu_copy_toHost_do_micro.count()<<"\t"<<total_gpu_get_results_update_do_micro.count()<<"\t"<<total_gpu_free_do_micro.count()<<"\t"<<total_gpu_free.count()<<std::endl;
     
     std::cout.precision(17);
     std::cout << "GPU Results:\n intercept = " << intercept << " slope1: " << slope1 << " slope2: " << slope2 << " slope3: " << slope3 << " # Iterations: "<< number_of_iteration_gpu <<  std::endl;
