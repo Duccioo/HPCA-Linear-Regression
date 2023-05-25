@@ -2,14 +2,14 @@ import pandas as pd
 
 
 def get_result(x1, x2, x3):
-    intercept = 0.14544570446014404
-    slope1 = 0.028964448720216751
-    slope2 = 0.83468538522720337
-    slope3 = 0.00063588534248992801
+    intercept = 0.27301457524299622
+    slope1 = 0.19559884071350098
+    slope2 = 0.25461623072624207
+    slope3 = 0.12938199937343597
     return intercept + slope1 * x1 + slope2 * x2 + slope3 * x3
 
 
-test_data = 'NEW/data/test_2.csv'  # Specify the folder path
+test_data = 'data/test.csv'  # Specify the folder path
 
 num_data = 16000
 

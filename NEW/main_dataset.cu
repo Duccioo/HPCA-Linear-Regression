@@ -14,16 +14,16 @@
 
 #include "linear_regression4d.cuh"
 
-#define INPUT_SIZE 500000
+#define INPUT_SIZE 144000
 #define ERROR_DIMENSIONS 5
 #define NUM_OF_THREADS 128
 // #define MAX_J_ERROR 0.00385058
-#define MAX_J_ERROR 0.01
+#define MAX_J_ERROR 0.00386
 #define LEARNING_RATE 0.000001
 #define MAX_ITER 50000
 #define NUM_REP 20
 
-auto dataset_folder = "data/genereted/4D/500000_dataset.csv";
+auto dataset_folder = "/home/macca0612/HPCA/HPCA-Linear-Regression/NEW/data/train.csv";
 
 auto total_cpu_results_update = std::chrono::high_resolution_clock::duration::zero();
 

@@ -22,7 +22,7 @@ font = {'weight': 'bold',
 
 matplotlib.rc('font', **font)
 
-folder_path = 'NEW/save'  # Specify the folder path
+folder_path = 'save/laptop-desktop'  # Specify the folder path
 
 # Sort the file names alphabetically
 file_names = os.listdir(folder_path)
@@ -88,9 +88,9 @@ for filename in file_names:
         # print(cpu_mean)
         # print(gpu_mean)
 
-        gpu_name = 'GPU ['+params[5]+' data points'
+        gpu_name = 'GPU ['+params[5]+' machine]'
 
-        cpu_name = 'CPU ['+params[5]+' data points'
+        cpu_name = 'CPU ['+params[5]+' machine]'
 
         gpu_mean.index = [gpu_name]
         cpu_mean.index = [cpu_name]
