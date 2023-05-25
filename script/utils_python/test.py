@@ -9,7 +9,7 @@ def get_result(x1, x2, x3):
     return intercept + slope1 * x1 + slope2 * x2 + slope3 * x3
 
 
-test_data = 'data/test.csv'  # Specify the folder path
+test_data = '..data/mock_dataset/test.csv'  # Specify the folder path
 
 num_data = 16000
 

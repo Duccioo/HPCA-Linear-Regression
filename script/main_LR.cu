@@ -24,8 +24,8 @@
 #define OUTPUT_RESULT_FOLDER "../result/result"
 #define ERROR_DIMENSIONS 5
 #define NUM_OF_THREADS 128
-#define MAX_J_ERROR 0.00385058
-// #define MAX_J_ERROR 0.00386
+//#define MAX_J_ERROR 0.00385058
+#define MAX_J_ERROR 0.00386
 #define LEARNING_RATE 0.000001
 #define MAX_ITER 50000
 #define NUM_REP 20

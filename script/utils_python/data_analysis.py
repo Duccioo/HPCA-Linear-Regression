@@ -22,7 +22,7 @@ font = {'weight': 'bold',
 
 matplotlib.rc('font', **font)
 
-folder_path = 'save/laptop-desktop'  # Specify the folder path
+folder_path = os.path.join('..','result')  # Specify the folder path
 
 # Sort the file names alphabetically
 file_names = os.listdir(folder_path)
