@@ -1,211 +1,461 @@
-#include <cuda_runtime.h>
-#include <fstream>
-
-#include <string>
-#include <vector>
-
-#include "device_launch_parameters.h"
-#include "csv.h"
-#include <algorithm>
-#include <array>
 #include <iostream>
-#include <numeric>
-#include <stdio.h>
+
+// #include <cstdint>
+#include <cstdlib>
+
+
+#include <vector>
+#include <array>
+#include <initializer_list>
 #include <time.h>
 #include <chrono>
+// #include <cmath>
+// #include <limits>
+#include <fstream>
+#include <string>
+#include <tuple>
+#include <sstream>
+
+#include <cuda.h>
 
 
-using namespace std;
-
-#define THREADS_PER_BLOCK 1024
-
-
-struct MultivariateCoordinate {
-  double xs[2];
-  double y;
-
-  MultivariateCoordinate(double x1, double x2, double y) {
-    this->xs[0] = x1;
-    this->xs[1] = x2;
-    this->y = y;
-  }
-};
+// ---
+#include "linear_regression4d.cuh"
+#include "data_manager.cc"
 
 
-// Definizione della struttura dati per i dati del paziente
-struct PatientData {
-  float age;
-  float sex;
-  float smoker;
-  float region;
-  float charges;
-};
+// #define INPUT_SIZE 144000
+#define DEFAULT_DATASET_FOLDER "../data/mock_dataset/train.csv"
+#define ERROR_DIMENSIONS 5
+#define NUM_OF_THREADS 128
+// #define MAX_J_ERROR 0.00385058
+#define MAX_J_ERROR 0.00386
+#define LEARNING_RATE 0.000001
+#define MAX_ITER 50000
+#define NUM_REP 20
 
+auto total_cpu_results_update = std::chrono::high_resolution_clock::duration::zero();
 
+std::tuple<float,float,float,float,int> linear_regression_cpu(const std::vector<float> &x1,
+                                                              const std::vector<float> &x2,
+                                                              const std::vector<float> &x3,
+                                                              const std::vector<float> &y, 
+                                                              float intercept,
+                                                              float slope1,
+                                                              float slope2,
+                                                              float slope3,
+                                                              int input_size) {
 
-// Funzione per calcolare la somma dei quadrati degli errori (SSE)
-__global__ void sse_kernel(PatientData *data, float *theta, float *sse, int n) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i < n) {
-    float y = data[i].charges;
-    float y_hat = theta[0] + theta[1] * data[i].age + theta[2] * data[i].sex +
-                  theta[3] * data[i].smoker + theta[4] * data[i].region;
-    float error = y_hat - y;
-    atomicAdd(sse, error * error);
-  }
-}
+    float j_error = std::numeric_limits<float>::max();
 
-// Funzione per calcolare i parametri della regressione lineare usando il metodo
-// dei minimi quadrati
-void linear_regression(PatientData *data, int n, float *theta) {
-  PatientData *d_data;
-  float *d_theta;
-  float *d_sse;
+    // float learning_rate = LEARNING_RATE;
+    int number_of_iteration_cpu = 0;
 
-  // Allocazione della memoria sulla GPU
-  cudaMalloc((void **)&d_data, n * sizeof(PatientData));
-  cudaMalloc((void **)&d_theta, 5 * sizeof(float));
-  cudaMalloc((void **)&d_sse, sizeof(float));
+    // Start timers
+    auto start_cpu_execution = std::chrono::high_resolution_clock::now();
 
-  // Copia dei dati e dei parametri sulla GPU
-  cudaMemcpy(d_data, data, n * sizeof(PatientData), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_theta, theta, 5 * sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemset(d_sse, 0, sizeof(float));
+    while(j_error > MAX_J_ERROR) {
+    
+        number_of_iteration_cpu++;
 
-  // Calcolo del numero di blocchi e thread per blocco
-  int num_blocks = (n + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+        // std::cout<<number_of_iteration_cpu<<std::endl;
+        if (number_of_iteration_cpu > MAX_ITER){
+            std::cout<<"\nMAX ITER - J-Error: "<<j_error<<std::endl;
+            break;
+        }
+    
+        //array for storing intermediate error levels
+        float errors[5] = {0, 0, 0, 0, 0};
 
-  // Esecuzione del kernel per il calcolo della SSE
-  sse_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(d_data, d_theta, d_sse, n);
+        int i = 0;	
 
-  // Copia del risultato dalla GPU alla CPU
-  float sse;
-  cudaMemcpy(&sse, d_sse, sizeof(float), cudaMemcpyDeviceToHost);
+        for (int elem: x1) {
 
-  // Calcolo dei parametri della regressione lineare
-  int x_sum[5] = {n, 0, 0, 0, 0};
-  float y_sum = 0;
-  float x_y_sum[5] = {0, 0, 0, 0, 0};
-  for (int i = 0; i < n; i++) {
-    x_sum[1] += data[i].age;
-    x_sum[2] += data[i].sex;
-    x_sum[3] += data[i].smoker;
-    x_sum[4] += data[i].region;
-    y_sum += data[i].charges;
-    x_y_sum[1] += data[i].age * data[i].charges;
-    x_y_sum[2] += data[i].sex * data[i].charges;
-    x_y_sum[3] += data[i].smoker * data[i].charges;
-    x_y_sum[4] += data[i].region * data[i].charges;
-  }
+            // Predict output based on current intercept and slope
+            float y_pred = intercept + slope1*x1[i] + slope2*x2[i] + slope3*x3[i];
+            // Calculate J for this specific index and store in errors index 0
+            errors[0] += 0.5f * pow((y[i] - y_pred), 2);
+            // Calculate intercept error for this index and store in errors index
+            errors[1] += -(y[i] - y_pred);
+            // Calculate slope error for this index
+            errors[2] += -(y[i] - y_pred)*x1[i];
+            errors[3] += -(y[i] - y_pred)*x2[i];
+            errors[4] += -(y[i] - y_pred)*x3[i];
 
-  float x_mean[5];
-  x_mean[0] = 1;
-  for (int i = 1; i < 5; i++) {
-    x_mean[i] = x_sum[i] / n;
-  }
+            i++;
+        }
 
-  float y_mean = y_sum / n;
+        // Normalize J based on the number of examples
+        errors[0] = errors[0] / input_size;
+        
+        auto start_results_update_while = std::chrono::high_resolution_clock::now();
 
-  float x_var[5] = {0, 0, 0, 0, 0};
-  for (int i = 0; i < n; i++) {
-    x_var[1] += pow(data[i].age - x_mean[1], 2);
-    x_var[2] += pow(data[i].sex - x_mean[2], 2);
-    x_var[3] += pow(data[i].smoker - x_mean[3], 2);
-    x_var[4] += pow(data[i].region - x_mean[4], 2);
-  }
+        // Update intercept and slope based on errors
+        float intercept_new = intercept - LEARNING_RATE * errors[1];
+        float slope_new_1 = slope1 - LEARNING_RATE * errors[2];
+        float slope_new_2 = slope2 - LEARNING_RATE * errors[3];
+        float slope_new_3 = slope3 - LEARNING_RATE * errors[4];
 
-  float cov_xy[5] = {0, 0, 0, 0, 0};
-  for (int i = 0; i < n; i++) {
-    cov_xy[1] += (data[i].age - x_mean[1]) * (data[i].charges - y_mean);
-    cov_xy[2] += (data[i].sex - x_mean[2]) * (data[i].charges - y_mean);
-    cov_xy[3] += (data[i].smoker - x_mean[3]) * (data[i].charges - y_mean);
-    cov_xy[4] += (data[i].region - x_mean[4]) * (data[i].charges - y_mean);
-  }
+        // Update
+        intercept = intercept_new;
+        slope1 = slope_new_1;
+        slope2 = slope_new_2;
+        slope3 = slope_new_3;
+        j_error = errors[0];
 
-  float slope[5];
-  slope[0] = y_mean - (cov_xy[1] / x_var[1]) * x_mean[1] -
-             (cov_xy[2] / x_var[2]) * x_mean[2] -
-             (cov_xy[3] / x_var[3]) * x_mean[3] -
-             (cov_xy[4] / x_var[4]) * x_mean[4];
-  slope[1] = cov_xy[1] / x_var[1];
-  slope[2] = cov_xy[2] / x_var[2];
-  slope[3] = cov_xy[3] / x_var[3];
-  slope[4] = cov_xy[4] / x_var[4];
+        auto end_results_update_while = std::chrono::high_resolution_clock::now();
+        total_cpu_results_update += end_results_update_while - start_results_update_while;
 
-  // Copia dei parametri dalla GPU alla CPU
-  cudaMemcpy(theta, slope, 5 * sizeof(float), cudaMemcpyHostToDevice);
+        // std::cout<< "J :" << j_error<< std::endl;
+    }
 
-  // Deallocazione della memoria sulla GPU
-  cudaFree(d_data);
-  cudaFree(d_theta);
-  cudaFree(d_sse);
+    return {intercept,slope1,slope2,slope3,number_of_iteration_cpu};
 }
 
 
+int main(int argc, char **argv){
 
-std::vector<MultivariateCoordinate> read_mock_data(const char *filepath) {
-  std::vector<MultivariateCoordinate> data;
+    if (argc > 2) {
+        printf("Usage: %s <dataset_file_path>\n\n", argv[0]);
+        printf("Example: %s \"test.csv\"\n\n", argv[0]);
+        return 1;
+    }
+    std::string dataset_folder;
 
-  io::CSVReader<5> in(filepath);
-  in.read_header(io::ignore_extra_column, "name", "points", "skill", "assists", "salary");
-  std::string name, skill;
-  double points, assists, salary;
+    if (argc == 1) {
+        dataset_folder = DEFAULT_DATASET_FOLDER;
+    }
+    if (argc == 2) {
+        if (argv[1] != " "){
+            dataset_folder = argv[1];  
+        }
+    }
 
-  // read all rows
-  /*while (in.read_row(name, points, skill, assists, salary))
-      data.push_back(Coordinate {points, salary});*/
+    for (int i=0;i<NUM_REP;i++){
 
-  // read 10k rows
-  for (int i = 0; i < 10; i++) {
-    in.read_row(name, points, skill, assists, salary);
-    data.push_back(MultivariateCoordinate(points, assists, salary));
-  }
+        std::ofstream savefile;
+        std::ostringstream file_path;
+        file_path<<"save/_"<<NUM_REP<<"_"<<NUM_OF_THREADS<<"_"<<MAX_J_ERROR<<"_"<<LEARNING_RATE<<"_save.txt";
+        std::string path_save = file_path.str();
+        // apertura del file in modalità "app"
+        savefile.open(path_save, std::ios_base::app);
+        // verifica che il file sia stato aperto correttamente
+        if (!savefile.is_open()) {
+            std::cerr << "Impossibile aprire il file." << std::endl;
+            return 1;
+        }
+    
+       
+        // define input vector:
+        std::vector<float> x1; 
+        std::vector<float> x2;
+        std::vector<float> x3;
+        std::vector<float> y; 
 
-  std::cout << "data size: " << data.size() << std::endl;
+        // loading the dataset:
+        int input_size = load_data(dataset_folder, x1, x2, x3, y);
+        if (input_size <=0){
+            std::cerr << "Impossibile aprire il dataset." << std::endl;
+            return 1;
+        }
 
-  return data;
+        std::cout<<"Starting...\n";
+        std::cout<<"\nParameteres:\n";
+        std::cout<<"Input size: \t\t"<<input_size<<std::endl;
+        std::cout<<"Number of threads: \t"<<NUM_OF_THREADS<<std::endl;
+        //Define number of blocks
+        long int numBlocks = (input_size + NUM_OF_THREADS - 1) / NUM_OF_THREADS;
+        std::cout<<"Number Block:\t\t"<< numBlocks << std::endl;
+        std::cout<<"Max error: \t\t"<<MAX_J_ERROR<<std::endl;
+        std::cout<<"Learning rate: \t\t"<<LEARNING_RATE<<std::endl;
+        
+        // Determine size of the x and y arrays
+        size_t input_size_byte = input_size * sizeof(float);
+        size_t error_size_byte = ERROR_DIMENSIONS * sizeof(float);
+
+        // Define the pointers to the x and y arrays with their respective size reserved
+        auto begin_cpu_allocate = std::chrono::high_resolution_clock::now();
+
+        float* h_x1 = (float*)malloc(input_size_byte);
+        float* h_x2 = (float*)malloc(input_size_byte);
+        float* h_x3 = (float*)malloc(input_size_byte);
+        float* h_y = (float*)malloc(input_size_byte);
+        float* h_intercept = (float*)malloc(sizeof(float));
+        float* h_slope1 = (float*)malloc(sizeof(float));
+        float* h_slope2 = (float*)malloc(sizeof(float));
+        float* h_slope3 = (float*)malloc(sizeof(float));
+        float* h_results = (float*)malloc(error_size_byte * numBlocks * sizeof(float));
+
+        auto end_cpu_allocate = std::chrono::high_resolution_clock::now();
+        auto elapsed_cpu_allocate = std::chrono::duration_cast<std::chrono::microseconds>(end_cpu_allocate - begin_cpu_allocate);
+        
+
+
+        // Compute random starting intercept and slope
+        float intercept = 0;
+        float slope1 = 0;
+        float slope2 = 0;
+        float slope3 = 0;
+        float init_intercept = intercept;
+        float init_slope1 = slope1;
+        float init_slope2 = slope2;
+        float init_slope3 = slope3;
+
+        // Store the address of the x and y arrays into the pointers h_x and h_y (host_x and host_y)
+        h_x1 = &x1[0];
+        h_x2 = &x2[0];
+        h_x3 = &x3[0];
+        h_y = &y[0];
+        h_intercept = &intercept;
+        h_slope1 = &slope1;
+        h_slope2 = &slope2;
+        h_slope3 = &slope3;
+
+        //Start measuring execution time of C tasks
+        auto begin_cpu_run_time = std::chrono::high_resolution_clock::now();
+
+        // EXECUTING CPU FUNCTION
+        auto [intercept_cpu,slope1_cpu,slope2_cpu,slope3_cpu,number_of_iteration_cpu] = linear_regression_cpu(x1,x2,x3, y, init_intercept, init_slope1,init_slope2,init_slope3, input_size);
+
+        auto end_cpu_run_time = std::chrono::high_resolution_clock::now();
+        auto elapsed_cpu_run_time = std::chrono::duration_cast<std::chrono::microseconds>(end_cpu_run_time - begin_cpu_run_time);
+
+        // std::cout << "CPU Results: intercept = " << intercept_cpu << " and slope: " << slope_cpu << " # Iterations: " << number_of_iteration_cpu << std::endl;
+
+        std::cout << "---------------     CPU     ------------------"<<std::endl;
+        std::cout << "GPU-implementation execution time [TOTAL] (micro s):: "<<elapsed_cpu_run_time.count() + elapsed_cpu_allocate.count()<<std::endl;
+        std::cout << "CPU-implementation execution time (micro s): " << elapsed_cpu_run_time.count() << std::endl;
+        std::cout << "CPU-allocate time (micro s): "<<elapsed_cpu_allocate.count()<<std::endl;
+
+        //Save data on the savefile
+        savefile << elapsed_cpu_run_time.count() << "\t" << elapsed_cpu_allocate.count() << std::endl;
+        std::cout << "\nCPU Results:\n intercept = " << intercept_cpu << " slope 1: " << slope1_cpu << " slope 2: " << slope2_cpu <<  " slope 3: " << slope3_cpu << " # Iterations: " << number_of_iteration_cpu << std::endl;
+
+
+        //     _____ _____  _    _ 
+        //     / ____|  __ \| |  | |
+        //    | |  __| |__) | |  | |
+        //    | | |_ |  ___/| |  | |
+        //    | |__| | |    | |__| |
+        //     \_____|_|     \____/ 
+                            
+
+        // Allocate memory on GPU for the device_x (d_x) and device_y (d_y) of earlier calculated size
+        float* d_x1;
+        float* d_x2;
+        float* d_x3; 
+        float* d_y; 
+        float* d_intercept; 
+        float* d_slope1; 
+        float* d_slope2;
+        float* d_slope3;
+        float* d_results;
+
+        // Warmup the device
+        cudaFree(0);
+
+        auto begin_gpu_allocate = std::chrono::high_resolution_clock::now();
+
+        // Allocate memory on GPU 
+        cudaMalloc(&d_x1, input_size_byte);
+        cudaMalloc(&d_x2, input_size_byte);
+        cudaMalloc(&d_x3, input_size_byte);
+        cudaMalloc(&d_y, input_size_byte);
+        cudaMalloc(&d_results, error_size_byte * numBlocks * sizeof(float));
+
+        auto end_gpu_allocate = std::chrono::high_resolution_clock::now();
+        auto elapsed_gpu_allocate = std::chrono::duration_cast<std::chrono::microseconds>(end_gpu_allocate - begin_gpu_allocate);
+
+        // Copy the values stored in pointer h_x and h_y into d_x and d_y
+        // Transfer data from CPU memory to GPU memory.
+        auto begin_gpu_copy = std::chrono::high_resolution_clock::now();
+        
+        // Copy data from CPU memory to GPU memory
+        cudaMemcpy(d_x1, h_x1, input_size_byte, cudaMemcpyHostToDevice);
+        cudaMemcpy(d_x2, h_x2, input_size_byte, cudaMemcpyHostToDevice);
+        cudaMemcpy(d_x3, h_x3, input_size_byte, cudaMemcpyHostToDevice);
+        cudaMemcpy(d_y, h_y, input_size_byte, cudaMemcpyHostToDevice);
+
+        auto end_gpu_copy = std::chrono::high_resolution_clock::now();
+        auto elapsed_gpu_copy = std::chrono::duration_cast<std::chrono::microseconds>(end_gpu_copy - begin_gpu_copy);
+
+
+        //Start timing the procedure
+
+        float j_error = std::numeric_limits<float>::max(); 
+
+        int number_of_iteration_gpu = 0;
+
+        auto total_gpu_allocate_do = std::chrono::high_resolution_clock::duration::zero();
+        auto total_gpu_copy_toDevice_do = std::chrono::high_resolution_clock::duration::zero();
+        auto total_gpu_kernel_do = std::chrono::high_resolution_clock::duration::zero();
+        auto total_gpu_copy_toHost_do = std::chrono::high_resolution_clock::duration::zero();
+        auto total_gpu_get_results_update_do = std::chrono::high_resolution_clock::duration::zero();
+        auto total_gpu_free_do = std::chrono::high_resolution_clock::duration::zero();
+        auto begin_gpu = std::chrono::high_resolution_clock::now();
+
+        do{
+            // Increase numeber of iterations
+            number_of_iteration_gpu++;
+
+            auto begin_gpu_allocate_do = std::chrono::high_resolution_clock::now();
+            // ALlocate memory for the pointers to the intercept and slope
+            cudaMalloc(&d_intercept, sizeof(float));
+            cudaMalloc(&d_slope1, sizeof(float));
+            cudaMalloc(&d_slope2, sizeof(float));
+            cudaMalloc(&d_slope3, sizeof(float));
+            auto end_gpu_allocate_do = std::chrono::high_resolution_clock::now();
+            total_gpu_allocate_do += end_gpu_allocate_do - begin_gpu_allocate_do;
+
+
+            // Copy the local value of the intercept and slope to the device memory.
+            auto begin_gpu_copy_toDevice_do = std::chrono::high_resolution_clock::now();
+            cudaMemcpy(d_intercept, h_intercept, sizeof(float), cudaMemcpyHostToDevice);
+            cudaMemcpy(d_slope1, h_slope1, sizeof(float), cudaMemcpyHostToDevice);
+            cudaMemcpy(d_slope2, h_slope2, sizeof(float), cudaMemcpyHostToDevice);
+            cudaMemcpy(d_slope3, h_slope3, sizeof(float), cudaMemcpyHostToDevice);
+            auto end_gpu_copy_toDevice_do = std::chrono::high_resolution_clock::now();
+            total_gpu_copy_toDevice_do += end_gpu_copy_toDevice_do - begin_gpu_copy_toDevice_do;
+
+
+            // Launch kernel on GPU with pointers to data in GPU memory
+
+            auto begin_gpu_kernel = std::chrono::high_resolution_clock::now();
+
+            simple_linear_regression<<<numBlocks,NUM_OF_THREADS>>>(d_x1,d_x2,d_x3, d_y, d_intercept, d_slope1,d_slope2,d_slope3, d_results, input_size);
+            // Wait for all threads to return
+            cudaDeviceSynchronize();
+
+            auto end_gpu_kernel = std::chrono::high_resolution_clock::now();
+            total_gpu_kernel_do += end_gpu_kernel - begin_gpu_kernel;
+
+
+            // Retrieve the GPU out value and store in host memory
+            // auto begin_gpu_results_mem_copy = std::chrono::high_resolution_clock::now();
+            auto begin_gpu_copy_toHost_do2 = std::chrono::high_resolution_clock::now();
+            cudaMemcpy(h_results, d_results, error_size_byte * numBlocks * sizeof(float), cudaMemcpyDeviceToHost);
+            auto end_gpu_copy_toHost_do2 = std::chrono::high_resolution_clock::now();
+            total_gpu_copy_toHost_do += end_gpu_copy_toHost_do2 - begin_gpu_copy_toHost_do2;
+
+            // Check if a CUDA error has occurred.
+            cudaError_t err = cudaGetLastError();
+            if (err != cudaSuccess) {
+                std::cout << "--------------------- Error: " << cudaGetErrorString(err) << std::endl;
+                break;
+            }
+
+            auto begin_gpu_free_do = std::chrono::high_resolution_clock::now();
+
+            // Free memory, on the next iteration we will allocate this memory again.
+            cudaFree(d_intercept);
+            cudaFree(d_slope1);
+            cudaFree(d_slope2);
+            cudaFree(d_slope3);
+
+            auto end_gpu_free_do = std::chrono::high_resolution_clock::now();
+            total_gpu_free_do += end_gpu_free_do - begin_gpu_free_do;
+
+            float j_error = 0;
+            float intercept_error = 0;
+            float slope1_error = 0;
+            float slope2_error = 0;
+            float slope3_error = 0;
+
+            
+            auto begin_gpu_get_results_update_do = std::chrono::high_resolution_clock::now();
+
+            for (int i=0; i<numBlocks*5; i++){
+                
+                if (i%ERROR_DIMENSIONS == 0) j_error += h_results[i];
+                
+                if ((i-1)%ERROR_DIMENSIONS == 0) intercept_error += h_results[i];
+                
+                if ((i-2)%ERROR_DIMENSIONS == 0) slope1_error += h_results[i];
+                
+                if ((i-3)%ERROR_DIMENSIONS == 0) slope2_error += h_results[i];
+                
+                if ((i-4)%ERROR_DIMENSIONS == 0) slope3_error += h_results[i];
+                
+            }
+
+            // Update intercept and slope based on errors
+            float intercept_new = intercept - LEARNING_RATE * intercept_error;
+            float slope1_new = slope1 - LEARNING_RATE * slope1_error;
+            float slope2_new = slope2 - LEARNING_RATE * slope2_error;
+            float slope3_new = slope3- LEARNING_RATE * slope3_error;
+
+            // Update
+            intercept = intercept_new;
+            slope1 = slope1_new;
+            slope2 = slope2_new;
+            slope3 = slope3_new;
+            j_error = j_error / input_size;
+
+            if (j_error < MAX_J_ERROR){
+                break;
+            }
+
+            if (number_of_iteration_gpu > MAX_ITER){
+                std::cout<<"\nMAX ITER - J-Error: "<<j_error<<std::endl;
+                break;
+            }
+
+            auto end_gpu_get_results_update_do = std::chrono::high_resolution_clock::now();
+            total_gpu_get_results_update_do += end_gpu_get_results_update_do - begin_gpu_get_results_update_do;
+
+            // std::cout<<"numBlocks: "<<numBlocks<<" J GPU:" << j_error<< std::endl;
+            // std::cout<<"\n  "<< (j_error < 1)<<std::endl;
+
+        } while( j_error > MAX_J_ERROR);
+
+        auto begin_gpu_free = std::chrono::high_resolution_clock::now();
+
+        // Free memory on GPU
+        cudaFree(d_x1);
+        cudaFree(d_x2);
+        cudaFree(d_x3);
+        cudaFree(d_y);
+
+        auto end_gpu_free = std::chrono::high_resolution_clock::now();
+        auto total_gpu_free = std::chrono::duration_cast<std::chrono::microseconds>(end_gpu_free - begin_gpu_free);
+
+        //End timing and compute total execution time
+        auto end_gpu = std::chrono::high_resolution_clock::now();
+        auto elapsed_gpu = std::chrono::duration_cast<std::chrono::microseconds>(end_gpu - begin_gpu);
+
+        //Convert time counter in micro seconds
+        auto total_gpu_allocate_do_micro = std::chrono::duration_cast<std::chrono::microseconds>(total_gpu_allocate_do);
+        auto total_gpu_copy_toDevice_do_micro = std::chrono::duration_cast<std::chrono::microseconds>(total_gpu_copy_toDevice_do);
+        auto total_gpu_kernel_do_micro = std::chrono::duration_cast<std::chrono::microseconds>(total_gpu_kernel_do);
+        auto total_gpu_copy_toHost_do_micro = std::chrono::duration_cast<std::chrono::microseconds>(total_gpu_copy_toHost_do);
+        auto total_gpu_get_results_update_do_micro = std::chrono::duration_cast<std::chrono::microseconds>(total_gpu_get_results_update_do);
+        auto total_gpu_free_do_micro = std::chrono::duration_cast<std::chrono::microseconds>(total_gpu_free_do);
+
+        // Print out latest values for total error, and intercept and slope respective errors
+        std::cout << "---------------     GPU     ------------------"<<std::endl;
+        std::cout << "GPU-implementation execution time [TOTAL] (micro s): " <<elapsed_gpu_copy.count() + elapsed_gpu_allocate.count() + total_gpu_allocate_do_micro.count() + total_gpu_copy_toDevice_do_micro.count() + total_gpu_kernel_do_micro.count() + total_gpu_copy_toHost_do_micro.count() + total_gpu_get_results_update_do_micro.count()+total_gpu_free_do_micro.count()+total_gpu_free.count() <<std::endl;
+        std::cout << "GPU-allocate time (micro s): "<<elapsed_gpu_allocate.count()<<std::endl;
+        std::cout << "GPU-copy time (micro s): "<<elapsed_gpu_copy.count()<<std::endl;
+        std::cout << "GPU-allocate do_cycle time (micro s): "<<total_gpu_allocate_do_micro.count()<<std::endl;
+        std::cout << "GPU-copy do_cycle time (micro s): "<<total_gpu_copy_toDevice_do_micro.count()<<std::endl;
+        std::cout << "GPU-kernel do_cycle(micro s): "<<total_gpu_kernel_do_micro.count()<<std::endl;
+        std::cout << "GPU-copy do_cycle time (micro s): "<<total_gpu_copy_toHost_do_micro.count()<<std::endl;
+        std::cout << "GPU-freeCuda do_cycle (micro s): "<<total_gpu_get_results_update_do_micro.count()<<std::endl;
+        std::cout << "GPU-get results & update (micro s): "<<total_gpu_free_do_micro.count()<<std::endl;
+        std::cout << "GPU-free CUDA (micro s): "<<total_gpu_free.count()<<std::endl;
+
+        //save data on the savefile
+        // savefile<<elapsed_gpu.count()<<"\t"<<elapsed_gpu_allocate.count()<<"\t"<<elapsed_gpu_copy.count()<<"\t"<<total_gpu_allocate_do_micro.count()<<"\t"<<total_gpu_copy_toDevice_do_micro.count()<<"\t"<<total_gpu_kernel_do_micro.count()<<"\t"<<total_gpu_get_results_update_do_micro.count()<<std::endl;
+        // savefile<<elapsed_gpu.count()<<"\t"<<elapsed_gpu_allocate.count()<<"\t"<<elapsed_gpu_copy.count()<<"\t"<<total_gpu_allocate_do_micro.count()<<"\t"<<total_gpu_copy_toDevice_do_micro.count()<<"\t"<<total_gpu_kernel_do_micro.count()<<"\t"<<total_gpu_copy_toHost_do_micro.count()<<"\t"<<total_gpu_get_results_update_do_micro.count()<<std::endl;
+        savefile<<elapsed_gpu_allocate.count()<<"\t"<<elapsed_gpu_copy.count()<<"\t"<<total_gpu_allocate_do_micro.count()<<"\t"<<total_gpu_copy_toDevice_do_micro.count()<<"\t"<<total_gpu_kernel_do_micro.count()<<"\t"<<total_gpu_copy_toHost_do_micro.count()<<"\t"<<total_gpu_get_results_update_do_micro.count()<<"\t"<<total_gpu_free_do_micro.count()<<"\t"<<total_gpu_free.count()<<std::endl;
+        
+        std::cout.precision(17);
+        std::cout << "GPU Results:\n intercept = " << intercept << " slope1: " << slope1 << " slope2: " << slope2 << " slope3: " << slope3 << " # Iterations: "<< number_of_iteration_gpu <<  std::endl;
+
+    }
+
+
+        return 0;
 }
 
-int main() {
-  // Lettura dei dati dal file CSV
-  // vector<vector<float>> csv_data= read_mock_data("../data/insurance.csv");
-  
-  std::vector<MultivariateCoordinate> coordinates = read_mock_data("../data/insurance.csv");
-  // Conversione dei dati in un vettore di strutture
-  int n = coordinates.size() - 1;
-  PatientData *data = new PatientData[n];
-  for (int i = 0; i < n; i++) {
-    data[i].age = coordinates[i + 1][0];
-    data[i].sex = coordinates[i + 1][1];
-    data[i].smoker = coordinates[i + 1][2];
-    data[i].region = coordinates[i + 1][3];
-    data[i].charges = coordinates[i + 1][4];
-  }
 
-  // Calcolo della regressione lineare
-  float *theta = new float[5];
-  linear_regression(data, n, theta);
-
-  // Stampa dei parametri della regressione lineare
-  cout << "Intercept: " << theta[0] << endl;
-  cout << "Slope for age: " << theta[1] << endl;
-  cout << "Slope for sex: " << theta[2] << endl;
-  cout << "Slope for smoker: " << theta[3] << endl;
-  cout << "Slope for region: " << theta[4] << endl;
-
-  // Calcolo del costo
-  float sse = 0;
-  for (int i = 0; i < n; i++) {
-    float y_pred = theta[0] + theta[1] * data[i].age + theta[2] * data[i].sex +
-                   theta[3] * data[i].smoker + theta[4] * data[i].region;
-    sse += pow(data[i].charges - y_pred, 2);
-  }
-
-  cout << "SSE: " << sse << endl;
-
-  // Deallocazione della memoria
-  delete[] data;
-  delete[] theta;
-
-  return 0;
-}
