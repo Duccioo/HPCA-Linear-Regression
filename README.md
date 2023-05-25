@@ -5,7 +5,7 @@ CPUs/GPUs Comparison of Multi Linear Regression Algorithm
 
 An analysis of a High-Performance Computer Architecture project focused on comparing the performance of linear regression algorithms on both CPU and GPU architectures. The objective of the project was to explore the potential acceleration benefits offered by GPU computing for linear regression tasks.
 
-link to the report [HERE](https://duccioo.github.io/HPCA-Linear-Regression/HPCA___Project_Report.pdf)
+-> Link to the report [HERE](https://duccioo.github.io/HPCA-Linear-Regression/HPCA___Project_Report.pdf)
 
 ## Prerequisites:
 
@@ -106,7 +106,7 @@ or if you want to use external dataset:
 ## Authors
 
 - [@macca0612](https://github.com/macca0612)
-- [@duccioo](https://github.com/macca0612)
+- [@duccioo](https://github.com/Duccioo)
 
 ## License
 
