@@ -29,7 +29,7 @@ Material present:
 |   data_analysis.py
 |   data_gen.py
 |   norm.py
-|   main_dataset.cu
+|   main_LR.cu
 |   linear_regression4d.cuh
 |   report.pdf
 |   requirements.txt
@@ -43,7 +43,7 @@ In order to run all the script you need the following:
 for the python scripts:
 > pip install -r requirements.txt
 
-for the main_dataset.cu script:
+for the main_LR.cu script:
 nvcc compiler
 CUDA 11.5
 
@@ -57,13 +57,13 @@ CUDA 11.5
                                   ______                                                                     
                                  |______|            
 
-The main_dataset.cu is the main file that allow to run the algorithm of the linear regression.
+The main_LR.cu is the main file that allow to run the algorithm of the linear regression.
 This automatically execute the CPU and the GPU version of the algorithm. This script returns the results
-of the elapsed time in file saved in /save folder of the cpu and gpu parameters.
+of the elapsed time in file saved in /result folder of the cpu and gpu parameters.
 
 To ececute:
-> nvcc -o main_dataset main_dataset.cu
-> ./main_dataset
+> nvcc -o main_LR main_LR.cu
+> ./main_LR
 
 
   _   _                                                                                          _                   _  _         _                      _     
@@ -88,7 +88,7 @@ This file is used in the main_dataset.cu file.
                                |______|                              |___/                      |_|      |___/ 
 
 The data_analysis.py script allow to plot graphically the mean of the multiple run saved on the file in the
-folder /save, if multiple files are present in the folder, the script automatically plots all the data in the same plot.
+folder /result, if multiple files are present in the folder, the script automatically plots all the data in the same plot.
 
                                                        
                                                        

@@ -1,16 +1,12 @@
 #include <iostream>
-
-// #include <cstdint>
 #include <cstdlib>
 
-
 #include <vector>
-#include <array>
 #include <initializer_list>
+
 #include <time.h>
 #include <chrono>
-// #include <cmath>
-// #include <limits>
+
 #include <fstream>
 #include <string>
 #include <tuple>
@@ -18,18 +14,18 @@
 
 #include <cuda.h>
 
-
 // ---
 #include "linear_regression4d.cuh"
 #include "data_manager.cc"
 
 
-// #define INPUT_SIZE 144000
+
 #define DEFAULT_DATASET_FOLDER "../data/mock_dataset/train.csv"
+#define OUTPUT_RESULT_FOLDER "../result/result"
 #define ERROR_DIMENSIONS 5
 #define NUM_OF_THREADS 128
-// #define MAX_J_ERROR 0.00385058
-#define MAX_J_ERROR 0.00386
+#define MAX_J_ERROR 0.00385058
+// #define MAX_J_ERROR 0.00386
 #define LEARNING_RATE 0.000001
 #define MAX_ITER 50000
 #define NUM_REP 20
@@ -115,7 +111,8 @@ std::tuple<float,float,float,float,int> linear_regression_cpu(const std::vector<
 
 int main(int argc, char **argv){
 
-    if (argc > 2) {
+    // option command line:
+    if (argc > 3) {
         printf("Usage: %s <dataset_file_path>\n\n", argv[0]);
         printf("Example: %s \"test.csv\"\n\n", argv[0]);
         return 1;
@@ -135,7 +132,7 @@ int main(int argc, char **argv){
 
         std::ofstream savefile;
         std::ostringstream file_path;
-        file_path<<"save/_"<<NUM_REP<<"_"<<NUM_OF_THREADS<<"_"<<MAX_J_ERROR<<"_"<<LEARNING_RATE<<"_save.txt";
+        file_path<<OUTPUT_RESULT_FOLDER<<"_"<<NUM_REP<<"_"<<NUM_OF_THREADS<<"_"<<MAX_J_ERROR<<"_"<<LEARNING_RATE<<"_save.txt";
         std::string path_save = file_path.str();
         // apertura del file in modalità "app"
         savefile.open(path_save, std::ios_base::app);
