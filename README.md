@@ -92,6 +92,11 @@ or if you want to use external dataset:
 
 
 ## Results
+### Generated dataset:
+![result](./img/10k-100k-500k.png)
+
+### External dataset from [@lianaling](https://github.com/lianaling/dspc-cuda/blob/main/dspc-cuda/mock.csv):
+![result](./img/mock_result.png)
 
 
 ## Authors
