@@ -100,3 +100,30 @@ folder /save, if multiple files are present in the folder, the script automatica
                                         |_|      |___/ 
 
 The norm.py script allow to normalize the dataset in input.
+
+
+                                      _           _                               
+                                     | |         | |                              
+   __ _    ___   _ __              __| |   __ _  | |_    __ _       _ __    _   _ 
+  / _` |  / _ \ | '_ \            / _` |  / _` | | __|  / _` |     | '_ \  | | | |
+ | (_| | |  __/ | | | |          | (_| | | (_| | | |_  | (_| |  _  | |_) | | |_| |
+  \__, |  \___| |_| |_|           \__,_|  \__,_|  \__|  \__,_| (_) | .__/   \__, |
+   __/ |                 ______                                    | |       __/ |
+  |___/                 |______|                                   |_|      |___/ 
+
+  This script allow to generate datasets in 4D, parameters like the Number of data must be specified in the file
+
+
+  _                  _                       
+ | |                | |                      
+ | |_    ___   ___  | |_       _ __    _   _ 
+ | __|  / _ \ / __| | __|     | '_ \  | | | |
+ | |_  |  __/ \__ \ | |_   _  | |_) | | |_| |
+  \__|  \___| |___/  \__| (_) | .__/   \__, |
+                              | |       __/ |
+                              |_|      |___/ 
+
+This file allow to test the performance of founded parameters of the regresions.
+The parameters like: intercept, slope1, slope2 and slope3 must be specified in the file.
+Then it returns the Accuracy.ls                            
+

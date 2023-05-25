@@ -111,10 +111,11 @@ std::tuple<float,float,float,float,int> linear_regression_cpu(const std::array<f
         slope2 = slope_new_2;
         slope3 = slope_new_3;
         j_error = errors[0];
+        // ALLERT ! ----------------------------------------------------------------
         // DEVELOPMENT MODE
         // j_error = 0;
         // ALLERT ! ----------------------------------------------------------------
-        // ALLERT ! ----------------------------------------------------------------
+        
 
         auto end_results_update_while = std::chrono::high_resolution_clock::now();
         total_cpu_results_update += end_results_update_while - start_results_update_while;
@@ -124,15 +125,6 @@ std::tuple<float,float,float,float,int> linear_regression_cpu(const std::array<f
 
     return {intercept,slope1,slope2,slope3,number_of_iteration_cpu};
 }
-
-// #define INPUT_SIZE 160000
-// #define ERROR_DIMENSIONS 5
-// #define NUM_OF_THREADS 32
-// // #define MAX_J_ERROR 0.0202
-// #define MAX_J_ERROR 0.01
-// #define LEARNING_RATE 0.000001
-// #define MAX_ITER 50000
-// #define NUM_REP 30
 
 
 int main(int argc, char **argv)
@@ -145,7 +137,7 @@ int main(int argc, char **argv)
     std::string path_save = file_path.str();
     // apertura del file in modalità "app"
     savefile.open(path_save, std::ios_base::app);
-       // verifica che il file sia stato aperto correttamente
+    // verifica che il file sia stato aperto correttamente
     if (!savefile.is_open()) {
         std::cerr << "Impossibile aprire il file." << std::endl;
         return 1;
@@ -255,11 +247,12 @@ int main(int argc, char **argv)
     float* d_slope3;
     float* d_results;
 
-
+    // Warmup the device
     cudaFree(0);
 
     auto begin_gpu_allocate = std::chrono::high_resolution_clock::now();
 
+    // Allocate memory on GPU 
     cudaMalloc(&d_x1, input_size);
     cudaMalloc(&d_x2, input_size);
     cudaMalloc(&d_x3, input_size);
@@ -273,6 +266,7 @@ int main(int argc, char **argv)
     // Transfer data from CPU memory to GPU memory.
     auto begin_gpu_copy = std::chrono::high_resolution_clock::now();
     
+    // Copy data from CPU memory to GPU memory
     cudaMemcpy(d_x1, h_x1, input_size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_x2, h_x2, input_size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_x3, h_x3, input_size, cudaMemcpyHostToDevice);
@@ -281,10 +275,6 @@ int main(int argc, char **argv)
     auto end_gpu_copy = std::chrono::high_resolution_clock::now();
     auto elapsed_gpu_copy = std::chrono::duration_cast<std::chrono::microseconds>(end_gpu_copy - begin_gpu_copy);
 
-    // std::cout<<"Copied\n";
-
-    // Define stepsize for updating slope and intercept.
-    // float learning_rate = LEARNING_RATE;
 
     //Start timing the procedure
 
@@ -367,17 +357,11 @@ int main(int argc, char **argv)
         float slope2_error = 0;
         float slope3_error = 0;
 
-        // auto end_gpu_copy_toDevice_do2 = std::chrono::high_resolution_clock::now();
-        // total_gpu_copy_toDevice_do = end_gpu_copy_toDevice_do2 - begin_gpu_copy_toDevice_do2;
-
-        // printf("\n-----------------------------------------------------");
-        // printf("\nSize of h_result : %lu",sizeof(h_results));
-
         
         auto begin_gpu_get_results_update_do = std::chrono::high_resolution_clock::now();
 
         for (int i=0; i<numBlocks*5; i++){
-            // printf("\nh_result [%d] = %f",i,h_results[i]);
+            
             if (i%ERROR_DIMENSIONS == 0){
                 j_error += h_results[i];
             }
@@ -408,7 +392,6 @@ int main(int argc, char **argv)
         slope3 = slope3_new;
         j_error = j_error / INPUT_SIZE;
 
-        // std::cout << "j_error: " << j_error<<std::endl;
         if (j_error < MAX_J_ERROR){
             break;
         }
@@ -422,8 +405,6 @@ int main(int argc, char **argv)
         total_gpu_get_results_update_do += end_gpu_get_results_update_do - begin_gpu_get_results_update_do;
 
         // std::cout<<"numBlocks: "<<numBlocks<<" J GPU:" << j_error<< std::endl;
-
-
         // std::cout<<"\n  "<< (j_error < 1)<<std::endl;
 
     } while( j_error > MAX_J_ERROR);
