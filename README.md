@@ -51,10 +51,10 @@ Dummy datasets were also generated to test the code using the `gen_data.py` scri
 
 In order to run all the script you need the following:
 
-for the python scripts:
+for the python scripts on `script/` directory:
 
 ```bash
- pip install -r requirements.txt
+ pip install -r utils_python/requirements.txt
 ```
 
 ## Run Locally
