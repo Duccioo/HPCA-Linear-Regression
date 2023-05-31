@@ -45,7 +45,7 @@ The default dataset (`data/mock_dataset/train.csv` and `data/mock_dataset/test.c
 - assists
 - salary
 
-Dummy datasets were also generated to test the code using the `gen_data.py` script with 4 dimensions and are located in `data/generated/4D/` folder
+Dummy datasets were also generated to test the code using the `gen_data.py` script with 4 dimensions and are located in `data/generated_dataset/4D/` folder
 
 ## Installation Python scripts
 

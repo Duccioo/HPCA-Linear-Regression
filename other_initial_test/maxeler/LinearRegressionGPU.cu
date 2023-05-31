@@ -71,10 +71,6 @@ int main() {
     timeDuration = getTime() - startTime;
     cudaDeviceSynchronize();
 
-    
-
-    
-
     printf("compute time: %g s\n", timeDuration);
 
     // deallocate memory
